@@ -1,12 +1,11 @@
 /**
  * Scoring Engine — Simplified Example
  *
- * Demonstrates how Omniwo calculates health scores using
- * longevity-optimised reference ranges instead of standard clinical ranges.
+ * Demonstrates the architecture of our multi-layer scoring system.
+ * Production version includes additional complexity for edge cases,
+ * demographic stratification, and weighted category scoring.
  *
- * Note: This is a simplified, sanitized version for portfolio purposes.
- * The production engine includes additional complexity for edge cases,
- * age/sex stratification, and weighted category scoring.
+ * Note: Proprietary ranges, thresholds, and weights are omitted.
  */
 
 // ---------------------------------------------------------------------------
@@ -36,14 +35,14 @@ export interface MarkerResult {
   value: number;
   unit: string;
   status: MarkerStatus;
-  score: number;        // 0-100 per marker
+  score: number;
   category: string;
 }
 
 export interface HealthScore {
-  overall: number;         // 0-100
-  band: string;            // "Excellent" | "Very Good" | etc.
-  stars: number;           // 1-5
+  overall: number;
+  band: string;
+  stars: number;
   categories: CategoryScore[];
   interpretation: string;
 }
@@ -64,33 +63,22 @@ export interface CategoryScore {
  * Determine the longevity status of a biomarker value.
  *
  * Unlike standard labs that use wide "normal" ranges,
- * we use tight optimal ranges based on population research.
- *
- * Example: Standard lab TSH range is 0.27–4.2 mIU/L
- *          Our optimal range is 0.5–2.5 mIU/L
- *          A value of 3.5 would be "normal" at a standard lab
- *          but "amber" (borderline) in our system.
+ * we apply proprietary optimal ranges derived from
+ * population-level research.
  */
 export function determineStatus(
   value: number,
   ranges: BiomarkerRanges,
 ): MarkerStatus {
-  // Green: within our optimal range
   if (value >= ranges.greenLow && value <= ranges.greenHigh) {
     return MarkerStatus.green;
   }
-
-  // Amber: outside optimal but within borderline
   if (value >= ranges.amberLow && value <= ranges.amberHigh) {
     return MarkerStatus.amber;
   }
-
-  // Red: outside borderline but within extended range
   if (value >= ranges.redLow && value <= ranges.redHigh) {
     return MarkerStatus.red;
   }
-
-  // Urgent: beyond all ranges
   return MarkerStatus.urgent_red;
 }
 
@@ -99,10 +87,8 @@ export function determineStatus(
 // ---------------------------------------------------------------------------
 
 /**
- * Calculate a per-marker score (0-100) based on how close
- * the value is to the optimal range centre.
- *
- * Green centre = 100, edges of amber = ~60, edges of red = ~30
+ * Calculate a per-marker score (0-100) based on proximity
+ * to the optimal range centre. Proprietary decay function.
  */
 export function calculateMarkerScore(
   value: number,
@@ -110,33 +96,28 @@ export function calculateMarkerScore(
 ): number {
   const greenMid = (ranges.greenLow + ranges.greenHigh) / 2;
   const greenSpan = (ranges.greenHigh - ranges.greenLow) / 2;
-
   if (greenSpan === 0) return value === greenMid ? 100 : 0;
 
-  // Distance from optimal centre, normalised
   const distance = Math.abs(value - greenMid) / greenSpan;
 
+  // Within optimal zone
   if (distance <= 1) {
-    // Within green zone: 85-100
     return Math.round(100 - (distance * 15));
   }
 
-  // Beyond green: exponential decay
+  // Beyond optimal: proprietary decay curve
   const decayed = 85 * Math.exp(-0.5 * (distance - 1));
   return Math.max(0, Math.round(decayed));
 }
 
 /**
  * Calculate the overall health score from individual marker results.
- *
- * Uses weighted category scoring — each biomarker category
- * contributes proportionally to the total score.
+ * Uses weighted category scoring — proprietary weights per category.
  */
 export function calculateHealthScore(
   markers: MarkerResult[],
   categoryWeights: Record<string, number>,
 ): HealthScore {
-  // Group markers by category
   const grouped = new Map<string, MarkerResult[]>();
   for (const marker of markers) {
     const group = grouped.get(marker.category) ?? [];
@@ -144,7 +125,6 @@ export function calculateHealthScore(
     grouped.set(marker.category, group);
   }
 
-  // Calculate per-category scores
   const categories: CategoryScore[] = [];
   let weightedSum = 0;
   let totalWeight = 0;
@@ -158,11 +138,8 @@ export function calculateHealthScore(
     weightedSum += avgScore * weight;
     totalWeight += weight;
 
-    // Count status distribution
     const dist = { green: 0, amber: 0, red: 0, urgent_red: 0 };
-    for (const m of categoryMarkers) {
-      dist[m.status]++;
-    }
+    for (const m of categoryMarkers) dist[m.status]++;
 
     categories.push({
       name,
@@ -173,9 +150,7 @@ export function calculateHealthScore(
     });
   }
 
-  const overall = totalWeight > 0
-    ? Math.round(weightedSum / totalWeight)
-    : 0;
+  const overall = totalWeight > 0 ? Math.round(weightedSum / totalWeight) : 0;
 
   return {
     overall,
@@ -209,7 +184,7 @@ function getStars(score: number): number {
 }
 
 function getInterpretation(score: number): string {
-  if (score >= 90) return 'Outstanding! Your biomarkers show excellent optimisation across the board.';
+  if (score >= 90) return 'Outstanding! Your biomarkers show excellent optimisation.';
   if (score >= 80) return 'Great work! Your overall health picture looks very positive.';
   if (score >= 70) return 'Good foundation. A few areas could benefit from attention.';
   if (score >= 60) return 'Decent baseline. Several markers suggest room for improvement.';
