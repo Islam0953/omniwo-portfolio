@@ -54,7 +54,7 @@ But "normal" means "not sick yet." For people who want to **optimise** — not j
               ▼            ▼            ▼
         ┌──────────┐ ┌──────────┐ ┌──────────┐
         │ Database │ │  Lab API │ │ Wearable │
-        │(Firestore)│ │Partners │ │  OAuth   │
+        │          │ │ Partners │ │   APIs   │
         └──────────┘ └──────────┘ └──────────┘
 ```
 
@@ -65,9 +65,9 @@ But "normal" means "not sick yet." For people who want to **optimise** — not j
 | Layer | Technology |
 |-------|-----------|
 | **Runtime** | Firebase Cloud Functions, Node 20, TypeScript (strict mode) |
-| **Database** | Firestore (NoSQL, real-time) |
+| **Database** | NoSQL, real-time |
 | **Lab Integration** | REST API + Webhooks |
-| **Wearables** | Oura Ring + Whoop (OAuth 2.0), expandable to 600+ devices |
+| **Wearables** | Oura Ring + Whoop, expandable to 600+ devices |
 | **AI Layer** | LLM-powered personalised narratives |
 | **Payments** | Stripe |
 | **Email** | Transactional + lifecycle email system |
