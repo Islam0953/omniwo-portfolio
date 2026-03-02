@@ -169,13 +169,14 @@ All data pipelines are proprietary — built in-house with custom filtering, uni
 
 ## Team
 
-**Islam** — Solo technical founder. Built entire backend from zero to production-ready.
+**Islam** — Technical Founder. Built entire backend from zero to production-ready.
+**Igor** — Co-Founder.
 
 ---
 
 ## Contact
 
-**Islam** — Founder, Omniwo
+**Islam** — Technical Founder, Omniwo
 GitHub: [@Islam0953](https://github.com/Islam0953)
 
 ---
