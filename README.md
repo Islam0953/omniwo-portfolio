@@ -2,7 +2,7 @@
 
 > **We show people what standard labs miss — and tell them exactly what to do about it.**
 
-Omniwo is a longevity-focused health platform launching in the UK. We combine lab-grade blood testing (40–90 biomarkers) with wearable device data, AI-powered insights, and personalised nutrition to help people understand and optimise their biology.
+Omniwo is a longevity-focused health platform launching in the UK. We combine lab-grade blood testing (40–90 biomarkers) with wearable device data, AI-powered insights, and personalised daily protocols to help people understand and optimise their biology.
 
 We are a **wellness intelligence platform** that uses proprietary longevity-optimised reference ranges instead of standard clinical "normal" ranges — catching patterns that standard labs miss, and explaining them in human language, not medical jargon.
 
