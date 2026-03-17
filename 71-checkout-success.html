@@ -1,0 +1,92 @@
+<!-- ============================================
+     OMNIWO - CHECKOUT SUCCESS PAGE (Embed on thank-you / order confirmation page)
+     ============================================ -->
+
+<script>
+(function() {
+  'use strict';
+
+  // ---- Extract order data from Webflow Ecommerce or data attributes ----
+  // Webflow exposes order data on the success page
+  // Adjust selectors based on your Webflow setup
+
+  var orderData = {
+    transactionId: '',
+    value: 0,
+    currency: 'GBP',
+    items: []
+  };
+
+  // Try to get from Webflow ecommerce data
+  var orderIdEl = document.querySelector('[data-order-id]');
+  var orderTotalEl = document.querySelector('[data-order-total]');
+  var productNameEl = document.querySelector('[data-product-name]');
+
+  if (orderIdEl) orderData.transactionId = orderIdEl.getAttribute('data-order-id');
+  if (orderTotalEl) orderData.value = parseFloat(orderTotalEl.getAttribute('data-order-total')) || 0;
+
+  // Fallback: generate transaction ID if not available
+  if (!orderData.transactionId) {
+    orderData.transactionId = 'omniwo_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+  }
+
+  var productName = productNameEl ? productNameEl.getAttribute('data-product-name') : 'Blood Test';
+
+  orderData.items = [{
+    item_name: productName,
+    price: orderData.value,
+    quantity: 1
+  }];
+
+  // ---- Prevent duplicate tracking (e.g., page refresh) ----
+  var trackingKey = 'omniwo_tracked_' + orderData.transactionId;
+  if (sessionStorage.getItem(trackingKey)) return;
+  sessionStorage.setItem(trackingKey, '1');
+
+  // ---- GA4 Purchase Event ----
+  if (typeof gtag === 'function') {
+    gtag('event', 'purchase', {
+      transaction_id: orderData.transactionId,
+      value: orderData.value,
+      currency: orderData.currency,
+      items: orderData.items
+    });
+  }
+
+  // ---- Meta Pixel Purchase Event ----
+  if (typeof fbq === 'function') {
+    fbq('track', 'Purchase', {
+      value: orderData.value,
+      currency: orderData.currency,
+      content_name: productName,
+      content_type: 'product'
+    });
+  }
+
+  // ---- Google Ads Conversion ----
+  // TODO: Uncomment and replace with your Conversion ID and Label from ads.google.com
+  /*
+  if (typeof gtag === 'function') {
+    gtag('event', 'conversion', {
+      send_to: 'AW-YOUR_GOOGLE_ADS_ID/YOUR_CONVERSION_LABEL',
+      value: orderData.value,
+      currency: 'GBP',
+      transaction_id: orderData.transactionId
+    });
+  }
+  */
+
+  // ---- UTM Attribution ----
+  var utmKeys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'];
+  var utmData = {};
+  utmKeys.forEach(function(key) {
+    var val = sessionStorage.getItem(key);
+    if (val) utmData[key] = val;
+  });
+
+  if (Object.keys(utmData).length > 0 && typeof gtag === 'function') {
+    gtag('event', 'purchase_attribution', utmData);
+  }
+
+})();
+</script>

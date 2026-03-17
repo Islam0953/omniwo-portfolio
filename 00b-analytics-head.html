@@ -1,0 +1,103 @@
+<!-- ============================================
+     OMNIWO - HEAD CODE (Webflow Settings -> Head Code)
+     ============================================ -->
+
+<!-- Google Analytics 4 (GA4) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-KPPJ9B1XGW"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-KPPJ9B1XGW');
+</script>
+
+<!-- Microsoft Clarity -->
+<!-- TODO: Replace YOUR_CLARITY_PROJECT_ID with actual Project ID from clarity.microsoft.com -->
+<script type="text/javascript">
+  (function(c,l,a,r,i,t,y){
+    c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+    t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+    y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+  })(window,document,"clarity","script","YOUR_CLARITY_PROJECT_ID");
+</script>
+
+<!-- Meta Pixel (Facebook) -->
+<!-- TODO: Uncomment and replace YOUR_META_PIXEL_ID with actual Pixel ID from business.facebook.com -->
+<!--
+<script>
+  !function(f,b,e,v,n,t,s)
+  {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+  n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+  if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+  n.queue=[];t=b.createElement(e);t.async=!0;
+  t.src=v;s=b.getElementsByTagName(e)[0];
+  s.parentNode.insertBefore(t,s)}(window,document,'script',
+  'https://connect.facebook.net/en_US/fbevents.js');
+  fbq('init', 'YOUR_META_PIXEL_ID');
+  fbq('track', 'PageView');
+</script>
+<noscript>
+  <img height="1" width="1" style="display:none"
+    src="https://www.facebook.com/tr?id=YOUR_META_PIXEL_ID&ev=PageView&noscript=1"/>
+</noscript>
+-->
+
+<!-- Google Ads Remarketing Tag -->
+<!-- TODO: Uncomment and replace YOUR_GOOGLE_ADS_ID with actual Conversion ID from ads.google.com -->
+<!--
+<script async src="https://www.googletagmanager.com/gtag/js?id=AW-YOUR_GOOGLE_ADS_ID"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'AW-YOUR_GOOGLE_ADS_ID');
+</script>
+-->
+
+<!-- Open Graph Meta Tags (Default - Site-wide) -->
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Omniwo" />
+<meta property="og:title" content="Omniwo — Longevity Blood Testing UK" />
+<meta property="og:description" content="Advanced blood testing with AI-powered insights. We show what standard labs miss — and tell you exactly what to do about it." />
+<meta property="og:url" content="https://www.omniwo.com" />
+<meta property="og:image" content="https://www.omniwo.com/images/og-default.jpg" />
+<meta property="og:locale" content="en_GB" />
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Omniwo — Longevity Blood Testing UK" />
+<meta name="twitter:description" content="Advanced blood testing with AI-powered insights." />
+<meta name="twitter:image" content="https://www.omniwo.com/images/og-default.jpg" />
+
+<!-- Schema.org Organization -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Omniwo Limited",
+  "url": "https://www.omniwo.com",
+  "logo": "https://www.omniwo.com/images/logo.png",
+  "description": "Longevity-focused health platform combining advanced blood testing with AI-powered insights and personalised daily protocols.",
+  "foundingDate": "2025",
+  "areaServed": {
+    "@type": "Country",
+    "name": "United Kingdom"
+  },
+  "sameAs": []
+}
+</script>
+
+<!-- Schema.org WebSite (enables sitelinks search in Google) -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "Omniwo",
+  "url": "https://www.omniwo.com",
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": "https://www.omniwo.com/search?q={search_term_string}",
+    "query-input": "required name=search_term_string"
+  }
+}
+</script>

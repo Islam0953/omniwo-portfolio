@@ -1,0 +1,181 @@
+<!-- ============================================
+     OMNIWO - FOOTER CODE (Webflow Settings -> Footer Code)
+     ============================================ -->
+
+<script>
+(function() {
+  'use strict';
+
+  // ---- Helper: check cookie consent ----
+  function hasConsent() {
+    // Respect cookie consent - check for common consent cookie patterns
+    // Returns true if no consent mechanism found (implied consent) or if consent granted
+    var consentCookie = document.cookie.match(/cookie_consent=([^;]+)/);
+    if (consentCookie && consentCookie[1] === 'denied') return false;
+    return true;
+  }
+
+  // ---- Helper: safe gtag call ----
+  function safeGtag() {
+    if (hasConsent() && typeof gtag === 'function') {
+      gtag.apply(null, arguments);
+    }
+  }
+
+  // ---- Helper: safe fbq call ----
+  function safeFbq() {
+    if (hasConsent() && typeof fbq === 'function') {
+      fbq.apply(null, arguments);
+    }
+  }
+
+  // ---- 1. UTM Capture ----
+  (function captureUTM() {
+    var params = new URLSearchParams(window.location.search);
+    var utmKeys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'];
+    utmKeys.forEach(function(key) {
+      var val = params.get(key);
+      if (val) {
+        sessionStorage.setItem(key, val);
+      }
+    });
+  })();
+
+  // ---- 2. PageView (GA4 auto-tracked, Meta needs explicit) ----
+  // GA4 PageView is automatic via gtag('config', ...)
+  // Meta PageView is in head code via fbq('track', 'PageView')
+
+  // ---- 3. ViewContent - on product detail pages ----
+  (function trackViewContent() {
+    var path = window.location.pathname;
+    if (path.indexOf('/product/') !== -1 || path.indexOf('/blood-test/') !== -1) {
+      var productName = document.querySelector('h1') ? document.querySelector('h1').textContent.trim() : 'Unknown';
+      var priceEl = document.querySelector('[data-price]');
+      var price = priceEl ? parseFloat(priceEl.getAttribute('data-price')) : 0;
+
+      safeGtag('event', 'view_item', {
+        currency: 'GBP',
+        value: price,
+        items: [{ item_name: productName, price: price }]
+      });
+
+      safeFbq('track', 'ViewContent', {
+        content_name: productName,
+        content_type: 'product',
+        value: price,
+        currency: 'GBP'
+      });
+    }
+  })();
+
+  // ---- 4. AddToCart - click on add-to-cart buttons ----
+  document.addEventListener('click', function(e) {
+    var btn = e.target.closest('[data-action="add-to-cart"], .add-to-cart-btn, .w-commerce-commerceaddtocartbutton');
+    if (!btn) return;
+
+    var productName = document.querySelector('h1') ? document.querySelector('h1').textContent.trim() : 'Unknown';
+    var priceEl = document.querySelector('[data-price]');
+    var price = priceEl ? parseFloat(priceEl.getAttribute('data-price')) : 0;
+
+    safeGtag('event', 'add_to_cart', {
+      currency: 'GBP',
+      value: price,
+      items: [{ item_name: productName, price: price }]
+    });
+
+    safeFbq('track', 'AddToCart', {
+      content_name: productName,
+      value: price,
+      currency: 'GBP'
+    });
+  });
+
+  // ---- 5. InitiateCheckout ----
+  (function trackCheckout() {
+    var path = window.location.pathname;
+    if (path.indexOf('/checkout') !== -1 || path.indexOf('/secure-checkout') !== -1) {
+      safeGtag('event', 'begin_checkout', { currency: 'GBP' });
+      safeFbq('track', 'InitiateCheckout');
+    }
+  })();
+
+  // ---- 6. Scroll Depth Tracking ----
+  (function trackScroll() {
+    var milestones = [25, 50, 75, 90];
+    var reached = {};
+
+    function getScrollPercent() {
+      var h = document.documentElement;
+      var b = document.body;
+      var st = window.pageYOffset || h.scrollTop || b.scrollTop || 0;
+      var sh = Math.max(h.scrollHeight, b.scrollHeight) - Math.max(h.clientHeight, b.clientHeight);
+      return sh > 0 ? Math.round((st / sh) * 100) : 0;
+    }
+
+    window.addEventListener('scroll', function() {
+      var pct = getScrollPercent();
+      milestones.forEach(function(m) {
+        if (pct >= m && !reached[m]) {
+          reached[m] = true;
+          safeGtag('event', 'scroll_depth', {
+            percent: m,
+            page: window.location.pathname
+          });
+        }
+      });
+    }, { passive: true });
+  })();
+
+  // ---- 7. Time on Page ----
+  (function trackTimeOnPage() {
+    var startTime = Date.now();
+
+    window.addEventListener('beforeunload', function() {
+      var seconds = Math.round((Date.now() - startTime) / 1000);
+      if (seconds > 2) {
+        // Use sendBeacon for reliable delivery
+        var data = JSON.stringify({
+          event: 'time_on_page',
+          seconds: seconds,
+          page: window.location.pathname
+        });
+        if (navigator.sendBeacon) {
+          navigator.sendBeacon('/api/analytics', data);
+        }
+        safeGtag('event', 'time_on_page', {
+          value: seconds,
+          page: window.location.pathname
+        });
+      }
+    });
+  })();
+
+  // ---- 8. CTA Click Tracking ----
+  document.addEventListener('click', function(e) {
+    var cta = e.target.closest('[data-cta], .cta-button, .hero-cta, a[href*="checkout"], a[href*="book"], a[href*="order"]');
+    if (!cta) return;
+
+    var ctaText = cta.textContent.trim().substring(0, 50);
+    var ctaHref = cta.getAttribute('href') || '';
+
+    safeGtag('event', 'cta_click', {
+      cta_text: ctaText,
+      cta_url: ctaHref,
+      page: window.location.pathname
+    });
+  });
+
+  // ---- 9. Quiz Start Tracking ----
+  document.addEventListener('click', function(e) {
+    var quizBtn = e.target.closest('[data-action="start-quiz"], .quiz-start-btn');
+    if (!quizBtn) return;
+
+    safeGtag('event', 'quiz_start', {
+      page: window.location.pathname
+    });
+
+    safeFbq('trackCustom', 'QuizStart');
+  });
+
+})();
+</script>

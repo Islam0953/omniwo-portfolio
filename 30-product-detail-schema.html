@@ -1,0 +1,71 @@
+<!-- ============================================
+     OMNIWO - PRODUCT DETAIL PAGE (Embed on each product page)
+     Schema.org Product + Dynamic OG tags
+     ============================================ -->
+
+<script>
+(function() {
+  'use strict';
+
+  // ---- Get product data from page elements ----
+  var productName = document.querySelector('h1') ? document.querySelector('h1').textContent.trim() : 'Blood Test';
+  var priceEl = document.querySelector('[data-price]');
+  var price = priceEl ? priceEl.getAttribute('data-price') : '0';
+  var descEl = document.querySelector('[data-description], .product-description');
+  var description = descEl ? descEl.textContent.trim().substring(0, 200) : 'Advanced blood testing with AI-powered insights by Omniwo.';
+  var imageEl = document.querySelector('.product-image img, [data-product-image]');
+  var imageUrl = imageEl ? (imageEl.getAttribute('src') || imageEl.getAttribute('data-product-image')) : 'https://www.omniwo.com/images/og-default.jpg';
+
+  // ---- Update page title ----
+  document.title = productName + ' - Blood Test | Omniwo';
+
+  // ---- Update OG tags dynamically ----
+  function setMeta(property, content) {
+    var el = document.querySelector('meta[property="' + property + '"]');
+    if (el) {
+      el.setAttribute('content', content);
+    } else {
+      var meta = document.createElement('meta');
+      meta.setAttribute('property', property);
+      meta.setAttribute('content', content);
+      document.head.appendChild(meta);
+    }
+  }
+
+  setMeta('og:title', productName + ' - Blood Test | Omniwo');
+  setMeta('og:description', description);
+  setMeta('og:image', imageUrl);
+  setMeta('og:url', window.location.href);
+  setMeta('og:type', 'product');
+
+  // ---- Inject Schema.org Product ----
+  var schema = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": productName,
+    "description": description,
+    "image": imageUrl,
+    "url": window.location.href,
+    "brand": {
+      "@type": "Brand",
+      "name": "Omniwo"
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": price,
+      "priceCurrency": "GBP",
+      "availability": "https://schema.org/InStock",
+      "seller": {
+        "@type": "Organization",
+        "name": "Omniwo Limited"
+      }
+    }
+  };
+
+  var scriptEl = document.createElement('script');
+  scriptEl.type = 'application/ld+json';
+  scriptEl.textContent = JSON.stringify(schema);
+  document.head.appendChild(scriptEl);
+
+})();
+</script>
