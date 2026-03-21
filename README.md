@@ -1,5 +1,12 @@
 # Omniwo — Longevity Intelligence Platform
 
+![TypeScript](https://img.shields.io/badge/TypeScript-strict_mode-3178C6?logo=typescript&logoColor=white)
+![Tests](https://img.shields.io/badge/tests-1%2C062_passing-brightgreen)
+![Build](https://img.shields.io/badge/build-passing-brightgreen)
+![Lint](https://img.shields.io/badge/lint-0_errors-brightgreen)
+![Node](https://img.shields.io/badge/Node-20-339933?logo=node.js&logoColor=white)
+![Coverage](https://img.shields.io/badge/modules-82-blue)
+
 > **We show people what standard labs miss — and tell them exactly what to do about it.**
 
 Omniwo is a longevity-focused health platform launching in the UK. We combine lab-grade blood testing (40–90 biomarkers) with wearable device data, AI-powered insights, and personalised daily protocols to help people understand and optimise their biology.
@@ -16,46 +23,86 @@ But "normal" means "not sick yet." For people who want to **optimise** — not j
 
 ---
 
-## Architecture Overview
+## System Architecture
 
+```mermaid
+graph TB
+    subgraph Client
+        PWA[PWA — Mobile-first Web App]
+    end
+
+    subgraph Cloud["Firebase Cloud Functions · Node 20 · TypeScript"]
+        direction TB
+
+        subgraph Engines["Core Engine Layer"]
+            SE[Scoring Engine]
+            IE[Insight Engine]
+            NE[Nutrition Engine]
+            AE[Assessment Engine]
+            WE[Wearable Engine]
+            NS[Notification Service]
+            PDF[PDF Report Generator]
+            PS[Payments Service]
+        end
+
+        subgraph Data["Proprietary Data Layer"]
+            POP[Population Research]
+            BIO[Bioactive Compounds]
+            NUT[Nutrient Density]
+            CLI[Clinical Standards]
+            SYN[Synergy Rules]
+        end
+    end
+
+    subgraph External["External Integrations"]
+        DB[(Database)]
+        LAB[Lab API Partners]
+        WEAR[Wearable APIs]
+        STRIPE[Stripe]
+        EMAIL[Email Service]
+    end
+
+    PWA --> Cloud
+    Engines --> Data
+    Cloud --> DB
+    Cloud --> LAB
+    Cloud --> WEAR
+    PS --> STRIPE
+    NS --> EMAIL
+    LAB -- "Webhooks" --> Cloud
+
+    style Client fill:#1a1a2e,stroke:#16213e,color:#fff
+    style Cloud fill:#0f3460,stroke:#16213e,color:#fff
+    style External fill:#1a1a2e,stroke:#16213e,color:#fff
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                      CLIENT (PWA)                           │
-│               Mobile-first responsive web app               │
-└──────────────────────────┬──────────────────────────────────┘
-                           │
-                           ▼
-┌─────────────────────────────────────────────────────────────┐
-│                 FIREBASE CLOUD FUNCTIONS                    │
-│                  Node 20 · TypeScript                       │
-│                                                             │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │               CORE ENGINE LAYER                       │  │
-│  │                                                       │  │
-│  │  Scoring      Insight       Nutrition     Assessment  │  │
-│  │  Engine       Engine        Engine        Engine      │  │
-│  │                                                       │  │
-│  │  Wearable     Notification  PDF Report    Payments    │  │
-│  │  Engine       Service       Generator     Service     │  │
-│  └──────────────────────────────────────────────────────┘  │
-│                                                             │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │               PROPRIETARY DATA LAYER                  │  │
-│  │                                                       │  │
-│  │  Population research databases · Bioactive compound   │  │
-│  │  databases · Nutrient density databases · Clinical    │  │
-│  │  standards · Proprietary correlation rules ·          │  │
-│  │  Insight templates · Synergy & intelligence rules     │  │
-│  └──────────────────────────────────────────────────────┘  │
-│                                                             │
-└──────────────────────────┬──────────────────────────────────┘
-                           │
-              ┌────────────┼────────────┐
-              ▼            ▼            ▼
-        ┌──────────┐ ┌──────────┐ ┌──────────┐
-        │ Database │ │  Lab API │ │ Wearable │
-        │          │ │ Partners │ │   APIs   │
-        └──────────┘ └──────────┘ └──────────┘
+
+---
+
+## How It Works
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant P as Platform
+    participant L as Lab Partner
+    participant W as Wearables
+    participant AI as AI Engine
+
+    U->>P: Orders blood test
+    P->>L: Creates lab order
+    L-->>P: Results webhook
+    P->>P: Score biomarkers (proprietary ranges)
+    P->>AI: Generate personalised insights
+    AI-->>P: Human-language explanations
+    P->>P: Build nutrition plan
+    P->>P: Generate PDF report
+    P-->>U: Results + insights + action plan
+
+    loop Daily
+        W-->>P: Sleep, activity, recovery data
+        P->>P: Update Dynamic Health Score
+        P-->>U: Daily score update
+    end
 ```
 
 ---
@@ -66,7 +113,7 @@ But "normal" means "not sick yet." For people who want to **optimise** — not j
 |-------|-----------|
 | **Runtime** | Firebase Cloud Functions, Node 20, TypeScript (strict mode) |
 | **Database** | NoSQL, real-time |
-| **Lab Integration** | REST API + Webhooks |
+| **Lab Integration** | REST API + Webhooks (HMAC-verified, idempotent) |
 | **Wearables** | Oura Ring + Whoop, expandable to 600+ devices |
 | **AI Layer** | LLM-powered personalised narratives |
 | **Payments** | Stripe |
@@ -85,6 +132,7 @@ Test suites:           28
 Tests passing:         1,062
 Build errors:          0
 Lint errors:           0
+Code style:            TypeScript strict — zero 'any' types
 ```
 
 ---
@@ -94,8 +142,12 @@ Lint errors:           0
 ### Proprietary Scoring Engine
 Multi-layer health scoring system that goes beyond simple range checking. Applies population-level research to classify biomarkers into 4 bands — from optimal to requiring attention — with weighted category scoring across 12 health domains.
 
+**[View code sample →](code-samples/scoring-engine.ts)**
+
 ### AI Insight Generation
 Template-based + AI-enhanced insight engine that generates personalised, human-language explanations for every out-of-range marker. Includes a unique **longevity context layer** that explains why we flag markers that standard labs consider "normal."
+
+**[View code sample →](code-samples/longevity-context.ts)**
 
 ### Multi-Source Nutrition Engine
 5-stage pipeline that generates personalised food recommendations by cross-referencing multiple scientific databases. Goes beyond "eat salmon" — we tell users **how much**, **when**, **how to prepare**, what **blocks absorption**, and what **amplifies** it.
@@ -106,6 +158,18 @@ Proprietary rule engine that identifies food-food interactions relevant to the u
 - Hidden blockers (what to avoid together)
 - Precision dosages, timing hacks, preparation methods
 - Food-as-supplement replacements
+
+**[View code sample →](code-samples/food-synergy-engine.ts)**
+
+### Lab Integration Pipeline
+Secure webhook-based integration with lab partners. Features HMAC signature verification, replay attack protection, idempotent processing, and a structured async pipeline from raw results to user-facing insights.
+
+**[View code sample →](code-samples/webhook-handler.ts)**
+
+### Wearable Data Sync
+Multi-provider normalisation layer that transforms raw wearable data (Oura, Whoop) into a unified format. Handles data validation, daily scoring, and feeds into the Dynamic Health Score engine.
+
+**[View code sample →](code-samples/wearable-sync.ts)**
 
 ### Biological Age Calculator
 Estimates biological age from blood biomarkers — "Your body is aging 3.8 years slower than average." A powerful engagement metric that resonates with longevity-focused users.
@@ -151,6 +215,20 @@ All data pipelines are proprietary — built in-house with custom filtering, uni
 3. **Natural approaches first** — food → lifestyle → supplements → GP only when critical
 4. **Longevity framing** — we explain why we flag things standard labs don't
 5. **Empower, not alarm** — celebrating wins, gently nudging improvements
+
+---
+
+## Code Samples
+
+| Sample | Description |
+|--------|------------|
+| [scoring-engine.ts](code-samples/scoring-engine.ts) | Multi-layer health scoring with proximity-based decay |
+| [food-synergy-engine.ts](code-samples/food-synergy-engine.ts) | Food interaction matching with fuzzy name resolution |
+| [longevity-context.ts](code-samples/longevity-context.ts) | Bridging clinical vs optimal range explanations |
+| [webhook-handler.ts](code-samples/webhook-handler.ts) | Secure lab results webhook with HMAC + idempotency |
+| [wearable-sync.ts](code-samples/wearable-sync.ts) | Multi-provider wearable data normalisation pipeline |
+
+> All samples are simplified demonstrations. Proprietary ranges, weights, thresholds, and business logic are omitted.
 
 ---
 
