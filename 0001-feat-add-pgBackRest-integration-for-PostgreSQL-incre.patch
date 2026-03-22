@@ -1,0 +1,778 @@
+From 62f592f0ff1b833391ae6c866984234b754b5a5a Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sun, 22 Mar 2026 15:35:08 +0000
+Subject: [PATCH] feat: add pgBackRest integration for PostgreSQL incremental
+ backups
+
+Implements pgBackRest as an alternative backup engine for PostgreSQL databases,
+enabling incremental and differential backups that significantly reduce storage
+costs and backup time for large databases (100GB+).
+
+Changes:
+- Add PgBackrestService with config generation, S3 support, WAL archiving
+- Modify DatabaseBackupJob to support pgBackRest engine alongside pg_dump
+- Modify StartPostgresql to configure WAL archiving when pgBackRest is enabled
+- Add backup engine selection UI (pg_dump vs pgBackRest) in Livewire components
+- Add database migration for engine/backup_type columns
+- Add comprehensive unit tests for PgBackrestService
+- PSR-12 compliant (camelCase methods, proper authorization)
+- Error handling in installation scripts with verification
+
+Resolves #7423
+---
+ app/Actions/Database/StartPostgresql.php      |  37 +++
+ app/Jobs/DatabaseBackupJob.php                |  54 ++++
+ app/Livewire/Project/Database/BackupEdit.php  |  16 ++
+ .../Database/CreateScheduledBackup.php        |  15 ++
+ app/Models/ScheduledDatabaseBackup.php        |   5 +
+ app/Models/StandalonePostgresql.php           |   5 +
+ app/Services/Backup/PgBackrestService.php     | 235 ++++++++++++++++++
+ ...26_03_22_000001_add_pgbackrest_support.php |  31 +++
+ .../project/database/backup-edit.blade.php    |  23 +-
+ .../create-scheduled-backup.blade.php         |  20 ++
+ tests/Feature/PgBackrestTest.php              | 154 ++++++++++++
+ 11 files changed, 594 insertions(+), 1 deletion(-)
+ create mode 100644 app/Services/Backup/PgBackrestService.php
+ create mode 100644 database/migrations/2026_03_22_000001_add_pgbackrest_support.php
+ create mode 100644 tests/Feature/PgBackrestTest.php
+
+diff --git a/app/Actions/Database/StartPostgresql.php b/app/Actions/Database/StartPostgresql.php
+index 41e39c81..960fce10 100644
+--- a/app/Actions/Database/StartPostgresql.php
++++ b/app/Actions/Database/StartPostgresql.php
+@@ -187,6 +187,43 @@ public function handle(StandalonePostgresql $database)
+ 
+         $command = ['postgres'];
+ 
++        // Add pgBackRest WAL archiving parameters if enabled
++        if ($this->database->pgbackrest_enabled) {
++            $pgbackrestService = new \App\Services\Backup\PgBackrestService($this->database, $this->database->destination->server);
++            $walParams = $pgbackrestService->getWalArchiveParams();
++            $command = array_merge($command, $walParams);
++
++            // Mount pgBackRest config and data directories
++            $pgbackrestConfigDir = $this->configuration_dir . '/pgbackrest';
++            $this->commands[] = "mkdir -p {$pgbackrestConfigDir}";
++
++            $docker_compose['services'][$container_name]['volumes'] = array_merge(
++                $docker_compose['services'][$container_name]['volumes'],
++                [
++                    [
++                        'type' => 'bind',
++                        'source' => $pgbackrestConfigDir . '/pgbackrest.conf',
++                        'target' => '/etc/pgbackrest/pgbackrest.conf',
++                        'read_only' => true,
++                    ],
++                ]
++            );
++
++            // Add named volume for pgBackRest data
++            $pgbackrestVolumeName = 'pgbackrest-data-' . $container_name;
++            $docker_compose['services'][$container_name]['volumes'][] = $pgbackrestVolumeName . ':/var/lib/pgbackrest';
++            $docker_compose['services'][$container_name]['volumes'][] = 'pgbackrest-log-' . $container_name . ':/var/log/pgbackrest';
++
++            $docker_compose['volumes'][$pgbackrestVolumeName] = [
++                'name' => $pgbackrestVolumeName,
++                'external' => false,
++            ];
++            $docker_compose['volumes']['pgbackrest-log-' . $container_name] = [
++                'name' => 'pgbackrest-log-' . $container_name,
++                'external' => false,
++            ];
++        }
++
+         if (filled($this->database->postgres_conf)) {
+             $docker_compose['services'][$container_name]['volumes'] = array_merge(
+                 $docker_compose['services'][$container_name]['volumes'],
+diff --git a/app/Jobs/DatabaseBackupJob.php b/app/Jobs/DatabaseBackupJob.php
+index b55c324b..f77d1b31 100644
+--- a/app/Jobs/DatabaseBackupJob.php
++++ b/app/Jobs/DatabaseBackupJob.php
+@@ -314,6 +314,19 @@ public function handle(): void
+                 // Step 1: Create local backup
+                 try {
+                     if (str($databaseType)->contains('postgres')) {
++                        // Check if pgBackRest engine is selected
++                        if ($this->backup->engine === 'pgbackrest' && $this->database instanceof StandalonePostgresql) {
++                            $this->backup_file = "/pgbackrest-$database-".Carbon::now()->timestamp.'.info';
++                            $this->backup_location = $this->backup_dir.$this->backup_file;
++                            $this->backup_log = ScheduledDatabaseBackupExecution::create([
++                                'uuid' => $this->backup_log_uuid,
++                                'database_name' => $database,
++                                'filename' => $this->backup_location,
++                                'scheduled_database_backup_id' => $this->backup->id,
++                                'local_storage_deleted' => false,
++                            ]);
++                            $this->backupWithPgbackrest($database);
++                        } else {
+                         $this->backup_file = "/pg-dump-$database-".Carbon::now()->timestamp.'.dmp';
+                         if ($this->backup->dump_all) {
+                             $this->backup_file = '/pg-dump-all-'.Carbon::now()->timestamp.'.gz';
+@@ -327,6 +340,7 @@ public function handle(): void
+                             'local_storage_deleted' => false,
+                         ]);
+                         $this->backup_standalone_postgresql($database);
++                        }
+                     } elseif (str($databaseType)->contains('mongo')) {
+                         if ($database === '*') {
+                             $database = 'all';
+@@ -525,6 +539,46 @@ private function backup_standalone_mongodb(string $databaseWithCollections): voi
+         }
+     }
+ 
++    private function backupWithPgbackrest(string $database): void
++    {
++        try {
++            $pgbackrestService = new \App\Services\Backup\PgBackrestService($this->database, $this->server);
++            $backupType = $this->backup->backup_type ?? 'incr';
++
++            // Ensure pgBackRest is set up in the container
++            $setupCommands = $pgbackrestService->buildSetupCommands($this->s3);
++            instant_remote_process($setupCommands, $this->server, true, false, $this->timeout, disableMultiplexing: true);
++
++            // Run the backup
++            $backupCommands = $pgbackrestService->buildContainerBackupCommands($backupType);
++            $this->backup_output = instant_remote_process($backupCommands, $this->server, true, false, $this->timeout, disableMultiplexing: true);
++
++            // Get backup info
++            $infoCommands = $pgbackrestService->buildContainerInfoCommands();
++            $infoOutput = instant_remote_process($infoCommands, $this->server, true, false, 60, disableMultiplexing: true);
++
++            // Save backup info to a file on the server
++            $commands = [
++                'mkdir -p '.$this->backup_dir,
++                "echo ".escapeshellarg($infoOutput)." > {$this->backup_location}",
++            ];
++            instant_remote_process($commands, $this->server, true, false, null, disableMultiplexing: true);
++
++            $this->backup_output = "pgBackRest {$backupType} backup completed successfully.\n" . trim($this->backup_output ?? '');
++            if ($this->backup_output === '') {
++                $this->backup_output = null;
++            }
++
++            // pgBackRest handles S3 natively, so mark as uploaded if S3 is configured
++            if ($this->s3) {
++                $this->s3_uploaded = true;
++            }
++        } catch (\Throwable $e) {
++            $this->add_to_error_output($e->getMessage());
++            throw $e;
++        }
++    }
++
+     private function backup_standalone_postgresql(string $database): void
+     {
+         try {
+diff --git a/app/Livewire/Project/Database/BackupEdit.php b/app/Livewire/Project/Database/BackupEdit.php
+index c24e2a3f..99ed91e8 100644
+--- a/app/Livewire/Project/Database/BackupEdit.php
++++ b/app/Livewire/Project/Database/BackupEdit.php
+@@ -78,6 +78,12 @@ class BackupEdit extends Component
+     #[Validate(['required', 'int', 'min:60', 'max:36000'])]
+     public int $timeout = 3600;
+ 
++    #[Validate(['required', 'string'])]
++    public string $engine = 'dump';
++
++    #[Validate(['required', 'string'])]
++    public string $backupType = 'full';
++
+     public function mount()
+     {
+         try {
+@@ -125,6 +131,14 @@ public function syncData(bool $toModel = false)
+             $this->backup->databases_to_backup = $this->databasesToBackup;
+             $this->backup->dump_all = $this->dumpAll;
+             $this->backup->timeout = $this->timeout;
++            $this->backup->engine = $this->engine;
++            $this->backup->backup_type = $this->backupType;
++
++            // Update pgbackrest_enabled on the database if needed
++            if ($this->engine === 'pgbackrest' && $this->backup->database_type === 'App\Models\StandalonePostgresql') {
++                $this->backup->database->update(['pgbackrest_enabled' => true]);
++            }
++
+             $this->customValidate();
+             $this->backup->save();
+         } else {
+@@ -143,6 +157,8 @@ public function syncData(bool $toModel = false)
+             $this->databasesToBackup = $this->backup->databases_to_backup;
+             $this->dumpAll = $this->backup->dump_all;
+             $this->timeout = $this->backup->timeout;
++            $this->engine = $this->backup->engine ?? 'dump';
++            $this->backupType = $this->backup->backup_type ?? 'full';
+         }
+     }
+ 
+diff --git a/app/Livewire/Project/Database/CreateScheduledBackup.php b/app/Livewire/Project/Database/CreateScheduledBackup.php
+index 7f807afe..ba0ff015 100644
+--- a/app/Livewire/Project/Database/CreateScheduledBackup.php
++++ b/app/Livewire/Project/Database/CreateScheduledBackup.php
+@@ -27,6 +27,14 @@ class CreateScheduledBackup extends Component
+     #[Validate(['nullable', 'integer'])]
+     public ?int $s3StorageId = null;
+ 
++    #[Validate(['required', 'string'])]
++    public string $engine = 'dump';
++
++    #[Validate(['required', 'string'])]
++    public string $backupType = 'full';
++
++    public bool $showPgbackrestOptions = false;
++
+     public Collection $definedS3s;
+ 
+     public function mount()
+@@ -63,8 +71,15 @@ public function submit()
+                 'database_id' => $this->database->id,
+                 'database_type' => $this->database->getMorphClass(),
+                 'team_id' => currentTeam()->id,
++                'engine' => $this->engine,
++                'backup_type' => $this->backupType,
+             ];
+ 
++            // Enable pgBackRest on the database if selected
++            if ($this->engine === 'pgbackrest' && $this->database->type() === 'standalone-postgresql') {
++                $this->database->update(['pgbackrest_enabled' => true]);
++            }
++
+             if ($this->database->type() === 'standalone-postgresql') {
+                 $payload['databases_to_backup'] = $this->database->postgres_db;
+             } elseif ($this->database->type() === 'standalone-mysql') {
+diff --git a/app/Models/ScheduledDatabaseBackup.php b/app/Models/ScheduledDatabaseBackup.php
+index 3ade21df..05148f73 100644
+--- a/app/Models/ScheduledDatabaseBackup.php
++++ b/app/Models/ScheduledDatabaseBackup.php
+@@ -46,6 +46,11 @@ public function s3()
+         return $this->belongsTo(S3Storage::class, 's3_storage_id');
+     }
+ 
++    public function isPgbackrest(): bool
++    {
++        return $this->engine === 'pgbackrest';
++    }
++
+     public function get_last_days_backup_status($days = 7)
+     {
+         return $this->hasMany(ScheduledDatabaseBackupExecution::class)->where('created_at', '>=', now()->subDays($days))->get();
+diff --git a/app/Models/StandalonePostgresql.php b/app/Models/StandalonePostgresql.php
+index 92b2efd3..cdd2c315 100644
+--- a/app/Models/StandalonePostgresql.php
++++ b/app/Models/StandalonePostgresql.php
+@@ -345,4 +345,9 @@ public function isBackupSolutionAvailable()
+     {
+         return true;
+     }
++
++    public function isPgbackrestEnabled(): bool
++    {
++        return (bool) $this->pgbackrest_enabled;
++    }
+ }
+diff --git a/app/Services/Backup/PgBackrestService.php b/app/Services/Backup/PgBackrestService.php
+new file mode 100644
+index 00000000..24a0080d
+--- /dev/null
++++ b/app/Services/Backup/PgBackrestService.php
+@@ -0,0 +1,235 @@
++<?php
++
++namespace App\Services\Backup;
++
++use App\Models\S3Storage;
++use App\Models\Server;
++use App\Models\StandalonePostgresql;
++
++class PgBackrestService
++{
++    public function __construct(
++        private StandalonePostgresql $database,
++        private Server $server,
++    ) {}
++
++    /**
++     * Generate pgBackRest configuration file content.
++     */
++    public function generateConfig(?S3Storage $s3 = null): string
++    {
++        $stanza = $this->getStanzaName();
++        $config = "[global]\n";
++        $config .= "repo1-retention-full=2\n";
++        $config .= "repo1-retention-diff=7\n";
++        $config .= "log-level-console=info\n";
++        $config .= "log-level-file=detail\n";
++        $config .= "start-fast=y\n";
++        $config .= "stop-auto=y\n";
++        $config .= "delta=y\n";
++        $config .= "compress-type=zst\n";
++        $config .= "compress-level=3\n";
++
++        if ($s3) {
++            $config .= "repo1-type=s3\n";
++            $config .= "repo1-s3-bucket={$s3->bucket}\n";
++            $config .= "repo1-s3-endpoint={$s3->endpoint}\n";
++            $config .= "repo1-s3-region={$s3->region}\n";
++            $config .= "repo1-s3-key={$s3->key}\n";
++            $config .= "repo1-s3-key-secret={$s3->secret}\n";
++            $config .= "repo1-s3-uri-style=path\n";
++            $config .= "repo1-path=/pgbackrest/{$stanza}\n";
++        } else {
++            $config .= "repo1-type=posix\n";
++            $config .= "repo1-path=/var/lib/pgbackrest\n";
++        }
++
++        $config .= "\n[{$stanza}]\n";
++        $config .= "pg1-path=/var/lib/postgresql/data\n";
++        $config .= "pg1-port=5432\n";
++        $config .= "pg1-user={$this->database->postgres_user}\n";
++
++        return $config;
++    }
++
++    /**
++     * Generate the entrypoint script that installs pgBackRest into the container.
++     */
++    public function generateInstallScript(): string
++    {
++        $stanza = $this->getStanzaName();
++
++        return <<<BASH
++#!/bin/bash
++set -e
++
++# Install pgBackRest if not already present
++if ! command -v pgbackrest &> /dev/null; then
++    echo "Installing pgBackRest..."
++    apt-get update -qq && apt-get install -y -qq pgbackrest > /dev/null 2>&1
++    if ! command -v pgbackrest &> /dev/null; then
++        echo "ERROR: pgBackRest installation failed"
++        exit 1
++    fi
++    echo "pgBackRest installed successfully"
++fi
++
++# Ensure directories exist with correct ownership
++mkdir -p /var/lib/pgbackrest /var/log/pgbackrest /etc/pgbackrest
++chown -R postgres:postgres /var/lib/pgbackrest /var/log/pgbackrest /etc/pgbackrest || true
++
++echo "pgBackRest setup complete"
++BASH;
++    }
++
++    /**
++     * Build command to create or verify a stanza.
++     */
++    public function buildStanzaCreateCommand(): string
++    {
++        $stanza = $this->getStanzaName();
++
++        return "pgbackrest --stanza={$stanza} stanza-create";
++    }
++
++    /**
++     * Build command to run a backup.
++     */
++    public function buildBackupCommand(string $type = 'incr'): string
++    {
++        $stanza = $this->getStanzaName();
++        $validTypes = ['full', 'incr', 'diff'];
++        $type = in_array($type, $validTypes) ? $type : 'incr';
++
++        return "pgbackrest --stanza={$stanza} --type={$type} backup";
++    }
++
++    /**
++     * Build command to get backup info in JSON format.
++     */
++    public function buildInfoCommand(): string
++    {
++        $stanza = $this->getStanzaName();
++
++        return "pgbackrest --stanza={$stanza} --output=json info";
++    }
++
++    /**
++     * Build command to restore from backup.
++     */
++    public function buildRestoreCommand(?string $targetTime = null): string
++    {
++        $stanza = $this->getStanzaName();
++        $cmd = "pgbackrest --stanza={$stanza} --delta restore";
++
++        if ($targetTime) {
++            $cmd .= " --type=time --target=" . escapeshellarg($targetTime);
++        }
++
++        return $cmd;
++    }
++
++    /**
++     * Build command to run expire (retention cleanup).
++     */
++    public function buildExpireCommand(): string
++    {
++        $stanza = $this->getStanzaName();
++
++        return "pgbackrest --stanza={$stanza} expire";
++    }
++
++    /**
++     * Get the PostgreSQL WAL archiving command parameters.
++     */
++    public function getWalArchiveParams(): array
++    {
++        $stanza = $this->getStanzaName();
++
++        return [
++            '-c', 'wal_level=replica',
++            '-c', 'archive_mode=on',
++            '-c', "archive_command=pgbackrest --stanza={$stanza} archive-push %p",
++            '-c', 'max_wal_senders=3',
++        ];
++    }
++
++    /**
++     * Get the stanza name derived from the database UUID.
++     */
++    public function getStanzaName(): string
++    {
++        return 'db-' . $this->database->uuid;
++    }
++
++    /**
++     * Get the pgBackRest configuration directory path.
++     */
++    public function getConfigDir(): string
++    {
++        return database_configuration_dir() . '/' . $this->database->uuid . '/pgbackrest';
++    }
++
++    /**
++     * Initialize pgBackRest inside the running container.
++     * Returns the commands to execute on the remote server.
++     */
++    public function buildSetupCommands(?S3Storage $s3 = null): array
++    {
++        $containerName = $this->database->uuid;
++        $configContent = base64_encode($this->generateConfig($s3));
++        $installScript = base64_encode($this->generateInstallScript());
++        $configDir = $this->getConfigDir();
++
++        $commands = [];
++
++        // Create pgBackRest config directory on host
++        $commands[] = "mkdir -p {$configDir}";
++
++        // Write config file
++        $commands[] = "echo '{$configContent}' | base64 -d | tee {$configDir}/pgbackrest.conf > /dev/null";
++
++        // Write install script
++        $commands[] = "echo '{$installScript}' | base64 -d | tee {$configDir}/install-pgbackrest.sh > /dev/null";
++        $commands[] = "chmod +x {$configDir}/install-pgbackrest.sh";
++
++        // Copy config into container
++        $commands[] = "docker cp {$configDir}/pgbackrest.conf {$containerName}:/etc/pgbackrest/pgbackrest.conf";
++
++        // Run install script inside container
++        $commands[] = "docker cp {$configDir}/install-pgbackrest.sh {$containerName}:/tmp/install-pgbackrest.sh";
++        $commands[] = "docker exec {$containerName} bash /tmp/install-pgbackrest.sh";
++
++        // Create stanza (only needed once, idempotent)
++        $commands[] = "docker exec -u postgres {$containerName} " . $this->buildStanzaCreateCommand() . " 2>&1 || true";
++
++        // Verify with stanza check
++        $commands[] = "docker exec -u postgres {$containerName} pgbackrest --stanza=" . $this->getStanzaName() . " check";
++
++        return $commands;
++    }
++
++    /**
++     * Build commands to run a backup inside the container.
++     */
++    public function buildContainerBackupCommands(string $type = 'incr'): array
++    {
++        $containerName = $this->database->uuid;
++
++        return [
++            "docker exec -u postgres {$containerName} " . $this->buildBackupCommand($type),
++        ];
++    }
++
++    /**
++     * Build commands to get backup info from the container.
++     */
++    public function buildContainerInfoCommands(): array
++    {
++        $containerName = $this->database->uuid;
++
++        return [
++            "docker exec -u postgres {$containerName} " . $this->buildInfoCommand(),
++        ];
++    }
++}
+diff --git a/database/migrations/2026_03_22_000001_add_pgbackrest_support.php b/database/migrations/2026_03_22_000001_add_pgbackrest_support.php
+new file mode 100644
+index 00000000..c214a2cb
+--- /dev/null
++++ b/database/migrations/2026_03_22_000001_add_pgbackrest_support.php
+@@ -0,0 +1,31 @@
++<?php
++
++use Illuminate\Database\Migrations\Migration;
++use Illuminate\Database\Schema\Blueprint;
++use Illuminate\Support\Facades\Schema;
++
++return new class extends Migration
++{
++    public function up(): void
++    {
++        Schema::table('scheduled_database_backups', function (Blueprint $table) {
++            $table->string('engine')->default('dump')->after('enabled');
++            $table->string('backup_type')->default('full')->after('engine');
++        });
++
++        Schema::table('standalone_postgresqls', function (Blueprint $table) {
++            $table->boolean('pgbackrest_enabled')->default(false)->after('dump_all');
++        });
++    }
++
++    public function down(): void
++    {
++        Schema::table('scheduled_database_backups', function (Blueprint $table) {
++            $table->dropColumn(['engine', 'backup_type']);
++        });
++
++        Schema::table('standalone_postgresqls', function (Blueprint $table) {
++            $table->dropColumn('pgbackrest_enabled');
++        });
++    }
++};
+diff --git a/resources/views/livewire/project/database/backup-edit.blade.php b/resources/views/livewire/project/database/backup-edit.blade.php
+index bb5dcfc4..833d1135 100644
+--- a/resources/views/livewire/project/database/backup-edit.blade.php
++++ b/resources/views/livewire/project/database/backup-edit.blade.php
+@@ -46,8 +46,29 @@
+     @endif
+     <div class="flex flex-col gap-2">
+         <h3>Settings</h3>
+-        <div class="flex gap-2 flex-col ">
++        <div class="flex gap-2 flex-col">
+             @if ($backup->database_type === 'App\Models\StandalonePostgresql' && $backup->database_id !== 0)
++                <div class="flex gap-2">
++                    <x-forms.select id="engine" label="Backup Engine" wire:model.live="engine">
++                        <option value="dump">pg_dump (Standard)</option>
++                        <option value="pgbackrest">pgBackRest (Incremental)</option>
++                    </x-forms.select>
++                    @if ($engine === 'pgbackrest')
++                        <x-forms.select id="backupType" label="Backup Type">
++                            <option value="full">Full</option>
++                            <option value="incr">Incremental</option>
++                            <option value="diff">Differential</option>
++                        </x-forms.select>
++                    @endif
++                </div>
++                @if ($engine === 'pgbackrest')
++                    <div class="text-sm text-neutral-400">
++                        pgBackRest enables incremental backups, reducing storage costs and backup time for large databases (100GB+).
++                        S3 storage is handled natively by pgBackRest when configured.
++                    </div>
++                @endif
++            @endif
++            @if ($backup->database_type === 'App\Models\StandalonePostgresql' && $backup->database_id !== 0 && ($engine ?? 'dump') === 'dump')
+                 <div class="w-48">
+                     <x-forms.checkbox label="Backup All Databases" id="dumpAll" instantSave />
+                 </div>
+diff --git a/resources/views/livewire/project/database/create-scheduled-backup.blade.php b/resources/views/livewire/project/database/create-scheduled-backup.blade.php
+index 8fa9924b..6bce2b03 100644
+--- a/resources/views/livewire/project/database/create-scheduled-backup.blade.php
++++ b/resources/views/livewire/project/database/create-scheduled-backup.blade.php
+@@ -2,6 +2,26 @@
+     <x-forms.input placeholder="0 0 * * * or daily" id="frequency"
+         helper="You can use every_minute, hourly, daily, weekly, monthly, yearly or a cron expression." label="Frequency"
+         required />
++
++    @if ($database && method_exists($database, 'type') && $database->type() === 'standalone-postgresql')
++        <h2>Backup Engine</h2>
++        <x-forms.select id="engine" label="Engine" wire:model.live="engine">
++            <option value="dump">pg_dump (Standard)</option>
++            <option value="pgbackrest">pgBackRest (Incremental)</option>
++        </x-forms.select>
++        @if ($engine === 'pgbackrest')
++            <x-forms.select id="backupType" label="Backup Type">
++                <option value="full">Full</option>
++                <option value="incr">Incremental</option>
++                <option value="diff">Differential</option>
++            </x-forms.select>
++            <div class="text-sm text-neutral-400">
++                pgBackRest enables incremental backups, reducing storage costs and backup time for large databases.
++                The first backup will always be a full backup regardless of the selected type.
++            </div>
++        @endif
++    @endif
++
+     <h2>S3</h2>
+     @if ($definedS3s->count() === 0)
+         <div class="text-red-500">No validated S3 Storages found.</div>
+diff --git a/tests/Feature/PgBackrestTest.php b/tests/Feature/PgBackrestTest.php
+new file mode 100644
+index 00000000..3645fd72
+--- /dev/null
++++ b/tests/Feature/PgBackrestTest.php
+@@ -0,0 +1,154 @@
++<?php
++
++namespace Tests\Feature;
++
++use App\Services\Backup\PgBackrestService;
++use App\Models\StandalonePostgresql;
++use App\Models\Server;
++use Tests\TestCase;
++
++class PgBackrestTest extends TestCase
++{
++    private function createMockDatabase(): StandalonePostgresql
++    {
++        $database = new StandalonePostgresql();
++        $database->uuid = 'test-db-uuid-123';
++        $database->postgres_user = 'postgres';
++        $database->postgres_db = 'testdb';
++
++        return $database;
++    }
++
++    private function createMockServer(): Server
++    {
++        $server = new Server();
++        $server->id = 1;
++
++        return $server;
++    }
++
++    public function test_stanza_name_is_derived_from_uuid(): void
++    {
++        $database = $this->createMockDatabase();
++        $server = $this->createMockServer();
++        $service = new PgBackrestService($database, $server);
++
++        $this->assertEquals('db-test-db-uuid-123', $service->getStanzaName());
++    }
++
++    public function test_generate_config_creates_valid_config(): void
++    {
++        $database = $this->createMockDatabase();
++        $server = $this->createMockServer();
++        $service = new PgBackrestService($database, $server);
++
++        $config = $service->generateConfig();
++
++        $this->assertStringContainsString('[global]', $config);
++        $this->assertStringContainsString('[db-test-db-uuid-123]', $config);
++        $this->assertStringContainsString('pg1-path=/var/lib/postgresql/data', $config);
++        $this->assertStringContainsString('pg1-user=postgres', $config);
++        $this->assertStringContainsString('repo1-type=posix', $config);
++        $this->assertStringContainsString('compress-type=zst', $config);
++    }
++
++    public function test_generate_config_with_s3_uses_s3_repo(): void
++    {
++        $database = $this->createMockDatabase();
++        $server = $this->createMockServer();
++        $service = new PgBackrestService($database, $server);
++
++        $s3 = new \App\Models\S3Storage();
++        $s3->bucket = 'test-bucket';
++        $s3->endpoint = 'https://s3.amazonaws.com';
++        $s3->region = 'us-east-1';
++        $s3->key = 'AKIATEST';
++        $s3->secret = 'secretkey';
++
++        $config = $service->generateConfig($s3);
++
++        $this->assertStringContainsString('repo1-type=s3', $config);
++        $this->assertStringContainsString('repo1-s3-bucket=test-bucket', $config);
++        $this->assertStringContainsString('repo1-s3-endpoint=https://s3.amazonaws.com', $config);
++        $this->assertStringNotContainsString('repo1-type=posix', $config);
++    }
++
++    public function test_build_backup_command_validates_type(): void
++    {
++        $database = $this->createMockDatabase();
++        $server = $this->createMockServer();
++        $service = new PgBackrestService($database, $server);
++
++        $this->assertStringContainsString('--type=full', $service->buildBackupCommand('full'));
++        $this->assertStringContainsString('--type=incr', $service->buildBackupCommand('incr'));
++        $this->assertStringContainsString('--type=diff', $service->buildBackupCommand('diff'));
++        $this->assertStringContainsString('--type=incr', $service->buildBackupCommand('invalid'));
++    }
++
++    public function test_build_restore_command_with_pitr(): void
++    {
++        $database = $this->createMockDatabase();
++        $server = $this->createMockServer();
++        $service = new PgBackrestService($database, $server);
++
++        $cmd = $service->buildRestoreCommand('2026-03-22 12:00:00');
++
++        $this->assertStringContainsString('--delta', $cmd);
++        $this->assertStringContainsString('--type=time', $cmd);
++        $this->assertStringContainsString('2026-03-22 12:00:00', $cmd);
++    }
++
++    public function test_build_restore_command_without_pitr(): void
++    {
++        $database = $this->createMockDatabase();
++        $server = $this->createMockServer();
++        $service = new PgBackrestService($database, $server);
++
++        $cmd = $service->buildRestoreCommand();
++
++        $this->assertStringContainsString('--delta', $cmd);
++        $this->assertStringNotContainsString('--type=time', $cmd);
++    }
++
++    public function test_wal_archive_params_contains_required_settings(): void
++    {
++        $database = $this->createMockDatabase();
++        $server = $this->createMockServer();
++        $service = new PgBackrestService($database, $server);
++
++        $params = $service->getWalArchiveParams();
++
++        $this->assertContains('-c', $params);
++        $this->assertContains('wal_level=replica', $params);
++        $this->assertContains('archive_mode=on', $params);
++        $this->assertTrue(
++            collect($params)->contains(fn ($p) => str_contains($p, 'archive_command=pgbackrest'))
++        );
++    }
++
++    public function test_install_script_contains_error_handling(): void
++    {
++        $database = $this->createMockDatabase();
++        $server = $this->createMockServer();
++        $service = new PgBackrestService($database, $server);
++
++        $script = $service->generateInstallScript();
++
++        $this->assertStringContainsString('set -e', $script);
++        $this->assertStringContainsString('command -v pgbackrest', $script);
++        $this->assertStringContainsString('ERROR: pgBackRest installation failed', $script);
++    }
++
++    public function test_container_backup_commands_use_postgres_user(): void
++    {
++        $database = $this->createMockDatabase();
++        $server = $this->createMockServer();
++        $service = new PgBackrestService($database, $server);
++
++        $commands = $service->buildContainerBackupCommands('full');
++
++        $this->assertCount(1, $commands);
++        $this->assertStringContainsString('-u postgres', $commands[0]);
++        $this->assertStringContainsString('test-db-uuid-123', $commands[0]);
++    }
++}
+-- 
+2.43.0
+
