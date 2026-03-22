@@ -1,0 +1,215 @@
+From c4f4f6544ff01b55292bc80b997fa1d7db3476ca Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sun, 22 Mar 2026 13:55:22 +0000
+Subject: [PATCH] feat(agent): add Agent/$stats operation for remote stats
+ retrieval
+
+Add a new $stats FHIR operation that allows fetching agent runtime
+statistics (queue depths, HL7 client counts, channel stats, heartbeat
+status) via WebSocket, following the same pattern as existing $fetch-logs
+and $reload-config operations.
+
+Closes #7221
+
+https://claude.ai/code/session_01K5UYcnS3skK6SKhFz3dcZs
+---
+ packages/agent/src/app.ts                     | 50 +++++++++++++++++
+ packages/core/src/agent.ts                    | 14 ++++-
+ .../server/src/fhir/operations/agentstats.ts  | 55 +++++++++++++++++++
+ packages/server/src/fhir/routes.ts            |  5 ++
+ 4 files changed, 123 insertions(+), 1 deletion(-)
+ create mode 100644 packages/server/src/fhir/operations/agentstats.ts
+
+diff --git a/packages/agent/src/app.ts b/packages/agent/src/app.ts
+index 9b4030c..afb76c3 100644
+--- a/packages/agent/src/app.ts
++++ b/packages/agent/src/app.ts
+@@ -5,6 +5,7 @@ import type {
+   AgentLogsRequest,
+   AgentMessage,
+   AgentReloadConfigResponse,
++  AgentStatsResponse,
+   AgentTransmitRequest,
+   AgentTransmitResponse,
+   AgentUpgradeRequest,
+@@ -336,6 +337,55 @@ export class App {
+           case 'agent:logs:request':
+             await this.handleLogRequest(command);
+             break;
++          case 'agent:stats:request':
++            try {
++              const stats = getCurrentStats();
++              let totalHl7Clients = 0;
++              for (const pool of this.hl7Clients.values()) {
++                totalHl7Clients += pool.size();
++              }
++
++              const hl7Channels = Array.from(this.channels.values()).filter(
++                (channel) => channel instanceof AgentHl7Channel
++              );
++              const channelStats = Object.fromEntries(
++                hl7Channels.map((channel) => [
++                  channel.getDefinition().name,
++                  channel.stats?.getStats() as ChannelStats,
++                ])
++              );
++
++              const pools = Array.from(this.hl7Clients.values());
++              const clientStats = Object.fromEntries(
++                pools.map((pool) => [
++                  `mllp://${pool.host}:${pool.port}?encoding=${pool.encoding ?? DEFAULT_ENCODING}`,
++                  pool.getPoolStats() as ChannelStats,
++                ])
++              );
++
++              await this.sendToWebSocket({
++                type: 'agent:stats:response',
++                statusCode: 200,
++                callback: command.callback,
++                stats: {
++                  ...stats,
++                  webSocketQueueDepth: this.webSocketQueue.length,
++                  hl7QueueDepth: this.hl7Queue.length,
++                  hl7ClientCount: totalHl7Clients,
++                  live: this.live,
++                  outstandingHeartbeats: this.outstandingHeartbeats,
++                  channelStats,
++                  clientStats,
++                },
++              } satisfies AgentStatsResponse);
++            } catch (err: unknown) {
++              await this.sendToWebSocket({
++                type: 'agent:error',
++                body: normalizeErrorString(err),
++                callback: command.callback,
++              });
++            }
++            break;
+           case 'agent:error':
+             this.log.error(command.body);
+             break;
+diff --git a/packages/core/src/agent.ts b/packages/core/src/agent.ts
+index 320dad6..840837d 100644
+--- a/packages/core/src/agent.ts
++++ b/packages/core/src/agent.ts
+@@ -91,13 +91,24 @@ export interface AgentLogsResponse extends BaseAgentMessage {
+   logs: LogMessage[];
+ }
+ 
++export interface AgentStatsRequest extends BaseAgentRequestMessage {
++  type: 'agent:stats:request';
++}
++
++export interface AgentStatsResponse extends BaseAgentMessage {
++  type: 'agent:stats:response';
++  statusCode: number;
++  stats: Record<string, unknown>;
++}
++
+ export type AgentRequestMessage =
+   | AgentConnectRequest
+   | AgentHeartbeatRequest
+   | AgentTransmitRequest
+   | AgentReloadConfigRequest
+   | AgentUpgradeRequest
+-  | AgentLogsRequest;
++  | AgentLogsRequest
++  | AgentStatsRequest;
+ 
+ export type AgentResponseMessage =
+   | AgentConnectResponse
+@@ -106,6 +117,7 @@ export type AgentResponseMessage =
+   | AgentReloadConfigResponse
+   | AgentUpgradeResponse
+   | AgentLogsResponse
++  | AgentStatsResponse
+   | AgentError;
+ 
+ export type AgentMessage = AgentRequestMessage | AgentResponseMessage;
+diff --git a/packages/server/src/fhir/operations/agentstats.ts b/packages/server/src/fhir/operations/agentstats.ts
+new file mode 100644
+index 0000000..5929662
+--- /dev/null
++++ b/packages/server/src/fhir/operations/agentstats.ts
+@@ -0,0 +1,55 @@
++// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
++// SPDX-License-Identifier: Apache-2.0
++import type { AgentStatsResponse, WithId } from '@medplum/core';
++import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
++import type { Agent, OperationDefinition } from '@medplum/fhirtypes';
++import { handleBulkAgentOperation, sendAndHandleAgentRequest } from './utils/agentutils';
++
++export const operation: OperationDefinition = {
++  resourceType: 'OperationDefinition',
++  name: 'agent-stats',
++  status: 'active',
++  kind: 'operation',
++  code: 'stats',
++  experimental: true,
++  resource: ['Agent'],
++  system: false,
++  type: true,
++  instance: true,
++  parameter: [{ use: 'out', name: 'return', type: 'Parameters', min: 1, max: '1' }],
++};
++
++/**
++ * Handles HTTP requests for the Agent $stats operation.
++ *
++ * Endpoints:
++ *   [fhir base]/Agent/$stats
++ *   [fhir base]/Agent/[id]/$stats
++ *
++ * @param req - The FHIR request.
++ * @returns The FHIR response.
++ */
++export async function agentStatsHandler(req: FhirRequest): Promise<FhirResponse> {
++  return handleBulkAgentOperation(req, async (agent) => getStats(agent));
++}
++
++async function getStats(agent: WithId<Agent>): Promise<FhirResponse> {
++  return sendAndHandleAgentRequest<AgentStatsResponse>(
++    agent,
++    { type: 'agent:stats:request' },
++    'agent:stats:response',
++    {
++      successHandler: (response) => {
++        return {
++          resourceType: 'Parameters',
++          parameter: [
++            {
++              name: 'stats',
++              valueString: JSON.stringify(response.stats),
++            },
++          ],
++        };
++      },
++    }
++  );
++}
+diff --git a/packages/server/src/fhir/routes.ts b/packages/server/src/fhir/routes.ts
+index bc3abbe..9930c76 100644
+--- a/packages/server/src/fhir/routes.ts
++++ b/packages/server/src/fhir/routes.ts
+@@ -18,6 +18,7 @@ import { agentBulkStatusHandler } from './operations/agentbulkstatus';
+ import { agentFetchLogsHandler } from './operations/agentfetchlogs';
+ import { agentPushHandler } from './operations/agentpush';
+ import { agentReloadConfigHandler } from './operations/agentreloadconfig';
++import { agentStatsHandler } from './operations/agentstats';
+ import { agentStatusHandler } from './operations/agentstatus';
+ import { agentUpgradeHandler } from './operations/agentupgrade';
+ import { aiOperationHandler } from './operations/ai';
+@@ -292,6 +293,10 @@ function initInternalFhirRouter(): FhirRouter {
+   router.add('GET', '/Agent/$fetch-logs', agentFetchLogsHandler);
+   router.add('GET', '/Agent/:id/$fetch-logs', agentFetchLogsHandler);
+ 
++  // Agent $stats operation
++  router.add('GET', '/Agent/$stats', agentStatsHandler);
++  router.add('GET', '/Agent/:id/$stats', agentStatsHandler);
++
+   // AsyncJob $cancel operation
+   router.add('POST', '/AsyncJob/:id/$cancel', asyncJobCancelHandler);
+ 
+-- 
+2.43.0
+
