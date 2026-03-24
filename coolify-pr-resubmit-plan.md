@@ -1,4 +1,7 @@
-# Coolify PR Resubmission Plan
+# Coolify PR Resubmission Plan — RESOLVED
+
+**PR #9144 passed all quality checks and is OPEN for review.**
+https://github.com/coollabsio/coolify/pull/9144
 
 ## Why PR #9082 and #9143 were auto-closed
 
