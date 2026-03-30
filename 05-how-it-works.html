@@ -1,228 +1,182 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>How Omniwo Works</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    *, *::before, *::after {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-    html {
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-    }
+  .hiw-section {
+    padding: 80px 0 100px;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
 
-    body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      color: #1a1a1a;
-      background: #fafafa;
-      line-height: 1.6;
-    }
+  .hiw-container {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
 
-    .container {
-      max-width: 1120px;
-      margin: 0 auto;
-      padding: 0 24px;
-    }
+  .hiw-title {
+    text-align: center;
+    font-size: clamp(32px, 4vw, 52px);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: #0a0a0a;
+    margin-bottom: 48px;
+    line-height: 1.2;
+  }
 
-    /* ─── How It Works ─── */
+  .hiw-title-accent {
+    color: #c8963e;
+  }
 
-    .how-it-works {
-      padding: 80px 0 100px;
-    }
+  .hiw-cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+  }
 
-    .how-title {
-      text-align: center;
-      font-size: clamp(32px, 4vw, 52px);
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      color: #0a0a0a;
-      margin-bottom: 48px;
-    }
+  .hiw-card {
+    position: relative;
+    border-radius: 20px;
+    overflow: hidden;
+    aspect-ratio: 3 / 4;
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 28px 24px;
+    cursor: default;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
 
-    .how-title-accent {
-      color: #c8963e;
-    }
+  .hiw-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0) 0%,
+      rgba(0, 0, 0, 0) 30%,
+      rgba(0, 0, 0, 0.45) 65%,
+      rgba(0, 0, 0, 0.7) 100%
+    );
+    border-radius: 20px;
+    pointer-events: none;
+  }
 
-    .cards-viewport {
-      overflow: visible;
-    }
+  .hiw-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1), 0 8px 24px rgba(0, 0, 0, 0.12);
+  }
 
-    .cards-track {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 20px;
-    }
+  .hiw-step {
+    position: relative;
+    z-index: 1;
+    font-size: 14px;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.85);
+    font-style: italic;
+  }
 
-    .card {
-      position: relative;
-      border-radius: 20px;
-      overflow: hidden;
-      aspect-ratio: 3 / 4;
-      background-size: cover;
-      background-position: center;
+  .hiw-content {
+    position: relative;
+    z-index: 1;
+  }
+
+  .hiw-card-title {
+    font-size: clamp(28px, 2.8vw, 40px);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: #fff;
+    margin-bottom: 12px;
+  }
+
+  .hiw-card-text {
+    font-size: 14px;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.92);
+  }
+
+  @media (max-width: 960px) {
+    .hiw-cards {
       display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      padding: 28px 24px;
-      cursor: default;
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      gap: 16px;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
     }
 
-    .card::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(
-        to bottom,
-        rgba(0, 0, 0, 0) 0%,
-        rgba(0, 0, 0, 0) 30%,
-        rgba(0, 0, 0, 0.45) 65%,
-        rgba(0, 0, 0, 0.7) 100%
-      );
-      border-radius: 20px;
-      pointer-events: none;
+    .hiw-cards::-webkit-scrollbar {
+      display: none;
     }
 
-    .card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1), 0 8px 24px rgba(0, 0, 0, 0.12);
+    .hiw-card {
+      flex: 0 0 calc(50% - 8px);
+      min-width: calc(50% - 8px);
+      scroll-snap-align: start;
+      aspect-ratio: 3 / 4;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .hiw-section {
+      padding: 56px 0 72px;
     }
 
-    .card-step {
-      position: relative;
-      z-index: 1;
-      font-size: 14px;
-      font-weight: 400;
-      color: rgba(255, 255, 255, 0.85);
-      font-style: italic;
+    .hiw-title {
+      margin-bottom: 32px;
     }
 
-    .card-content {
-      position: relative;
-      z-index: 1;
+    .hiw-card {
+      flex: 0 0 80%;
+      min-width: 80%;
     }
 
-    .card-title {
-      font-size: clamp(28px, 2.8vw, 40px);
-      font-weight: 700;
-      line-height: 1.1;
-      letter-spacing: -0.02em;
-      color: #fff;
-      margin-bottom: 12px;
+    .hiw-card-title {
+      font-size: 22px;
     }
+  }
+</style>
 
-    .card-text {
-      font-size: 14px;
-      line-height: 1.5;
-      color: rgba(255, 255, 255, 0.92);
-    }
+<div class="hiw-section">
+  <div class="hiw-container">
+    <h2 class="hiw-title">How <span class="hiw-title-accent">Omniwo</span> Works</h2>
 
-    /* ─── Responsive: Tablet — Horizontal Scroll Slider ─── */
+    <div class="hiw-cards">
 
-    @media (max-width: 960px) {
-      .cards-viewport {
-        overflow: hidden;
-        margin: 0 -24px;
-        padding: 0 24px;
-      }
-
-      .cards-track {
-        display: flex;
-        gap: 16px;
-        overflow-x: auto;
-        scroll-snap-type: x mandatory;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
-        padding-bottom: 4px;
-      }
-
-      .cards-track::-webkit-scrollbar {
-        display: none;
-      }
-
-      .cards-track .card {
-        flex: 0 0 calc(50% - 8px);
-        min-width: calc(50% - 8px);
-        scroll-snap-align: start;
-        aspect-ratio: 3 / 4;
-      }
-    }
-
-    /* ─── Responsive: Mobile ─── */
-
-    @media (max-width: 600px) {
-      .how-it-works {
-        padding: 56px 0 72px;
-      }
-
-      .how-title {
-        margin-bottom: 32px;
-      }
-
-      .cards-track .card {
-        flex: 0 0 80%;
-        min-width: 80%;
-      }
-
-      .card-title {
-        font-size: 22px;
-      }
-    }
-  </style>
-</head>
-<body>
-
-  <section class="how-it-works">
-    <div class="container">
-      <h2 class="how-title">How <span class="how-title-accent">Omniwo</span> Works</h2>
-
-      <div class="cards-viewport">
-        <div class="cards-track">
-
-          <article class="card" style="background-image: url('https://res.cloudinary.com/dlj97ydij/image/upload/v1774885028/full-frame-shot-water-drops-orange_xtxtue.jpg')">
-            <span class="card-step">step #1</span>
-            <div class="card-content">
-              <h3 class="card-title">Order<br>Your Test</h3>
-              <p class="card-text">Pick from 7 health categories and up to 90 biomarkers — from a quick longevity check to a full-body deep dive.</p>
-            </div>
-          </article>
-
-          <article class="card" style="background-image: url('https://res.cloudinary.com/dlj97ydij/image/upload/v1774885260/detail-yellow-feather-with-water-drops_nplfok.jpg')">
-            <span class="card-step">step #2</span>
-            <div class="card-content">
-              <h3 class="card-title">Collect<br>Your Sample</h3>
-              <p class="card-text">A simple finger-prick kit delivered to your door. 10 minutes, no clinic, free return envelope.</p>
-            </div>
-          </article>
-
-          <article class="card" style="background-image: url('https://res.cloudinary.com/dlj97ydij/image/upload/v1774885035/slice-orange-covered-with-bubbles-lies-glass-sparkling-water-close-up_zgwihj.jpg')">
-            <span class="card-step">step #3</span>
-            <div class="card-content">
-              <h3 class="card-title">Get Results<br>& Insights</h3>
-              <p class="card-text">Your Omniwo Score, BioAge, and science-backed insights - showing what standard labs miss. Connect your wearables for a deeper picture</p>
-            </div>
-          </article>
-
-          <article class="card" style="background-image: url('https://res.cloudinary.com/dlj97ydij/image/upload/v1774885032/ovum-with-needle-artificial-insemination-vitro-fertilization-concept-genetic-engineering-artificial-insemination-infertility-treatment_dxnqih.jpg')">
-            <span class="card-step">step #4</span>
-            <div class="card-content">
-              <h3 class="card-title">Follow Your<br>Personalised<br>Protocols</h3>
-              <p class="card-text">Evidence-based action plans built around your unique biomarker profile - designed to optimise your health, slow biological ageing, and track real progress over time.</p>
-            </div>
-          </article>
-
+      <div class="hiw-card" style="background-image: url('https://res.cloudinary.com/dlj97ydij/image/upload/v1774885028/full-frame-shot-water-drops-orange_xtxtue.jpg')">
+        <span class="hiw-step">step #1</span>
+        <div class="hiw-content">
+          <div class="hiw-card-title">Order<br>Your Test</div>
+          <div class="hiw-card-text">Pick from 7 health categories and up to 90 biomarkers — from a quick longevity check to a full-body deep dive.</div>
         </div>
       </div>
-    </div>
-  </section>
 
-</body>
-</html>
+      <div class="hiw-card" style="background-image: url('https://res.cloudinary.com/dlj97ydij/image/upload/v1774885260/detail-yellow-feather-with-water-drops_nplfok.jpg')">
+        <span class="hiw-step">step #2</span>
+        <div class="hiw-content">
+          <div class="hiw-card-title">Collect<br>Your Sample</div>
+          <div class="hiw-card-text">A simple finger-prick kit delivered to your door. 10 minutes, no clinic, free return envelope.</div>
+        </div>
+      </div>
+
+      <div class="hiw-card" style="background-image: url('https://res.cloudinary.com/dlj97ydij/image/upload/v1774885035/slice-orange-covered-with-bubbles-lies-glass-sparkling-water-close-up_zgwihj.jpg')">
+        <span class="hiw-step">step #3</span>
+        <div class="hiw-content">
+          <div class="hiw-card-title">Get Results<br>& Insights</div>
+          <div class="hiw-card-text">Your Omniwo Score, BioAge, and science-backed insights - showing what standard labs miss. Connect your wearables for a deeper picture</div>
+        </div>
+      </div>
+
+      <div class="hiw-card" style="background-image: url('https://res.cloudinary.com/dlj97ydij/image/upload/v1774885032/ovum-with-needle-artificial-insemination-vitro-fertilization-concept-genetic-engineering-artificial-insemination-infertility-treatment_dxnqih.jpg')">
+        <span class="hiw-step">step #4</span>
+        <div class="hiw-content">
+          <div class="hiw-card-title">Follow Your<br>Personalised<br>Protocols</div>
+          <div class="hiw-card-text">Evidence-based action plans built around your unique biomarker profile - designed to optimise your health, slow biological ageing, and track real progress over time.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
