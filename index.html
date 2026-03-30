@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Omniwo — Longevity Intelligence Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="container header-inner">
+      <a href="#" class="logo">Omniwo</a>
+      <nav class="nav">
+        <a href="#features">Features</a>
+        <a href="#tech">Tech</a>
+        <a href="#about">About</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="container">
+      <p class="hero-label">Longevity Intelligence Platform</p>
+      <h1 class="hero-title">We show people what<br>standard labs miss</h1>
+      <p class="hero-subtitle">Lab-grade blood testing combined with wearable data, AI-powered insights, and personalised daily protocols to help people understand and optimise their biology.</p>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section id="features" class="features">
+    <div class="container">
+      <p class="section-label">How it works</p>
+      <h2 class="section-title">Four steps to optimised health</h2>
+
+      <div class="cards-viewport">
+        <div class="cards-track">
+
+          <article class="card">
+            <span class="card-step">01</span>
+            <div class="card-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
+                <rect x="9" y="3" width="6" height="4" rx="1"/>
+                <path d="M9 14l2 2 4-4"/>
+              </svg>
+            </div>
+            <h3 class="card-title">Choose your test</h3>
+            <p class="card-text">Select from 40 to 90 biomarkers. We test what matters for longevity — not just what's standard. Optimised panels designed around the latest research.</p>
+            <div class="card-metric">
+              <span class="card-metric-value">90</span>
+              <span class="card-metric-label">Biomarkers</span>
+            </div>
+          </article>
+
+          <article class="card">
+            <span class="card-step">02</span>
+            <div class="card-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                <polyline points="9 22 9 12 15 12 15 22"/>
+              </svg>
+            </div>
+            <h3 class="card-title">Collect your sample at home</h3>
+            <p class="card-text">Use a simple finger-prick kit or book a nurse visit — whatever suits you. No clinic appointments, no queues. We deliver the kit to your door and include a free return envelope.</p>
+            <div class="card-metric">
+              <span class="card-metric-value">0</span>
+              <span class="card-metric-label">Clinic visits needed</span>
+            </div>
+          </article>
+
+          <article class="card">
+            <span class="card-step">03</span>
+            <div class="card-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 20V10"/>
+                <path d="M18 20V4"/>
+                <path d="M6 20v-4"/>
+              </svg>
+            </div>
+            <h3 class="card-title">Get AI-powered insights</h3>
+            <p class="card-text">Receive personalised, human-language explanations for every marker. We use longevity-optimised ranges — catching what standard labs miss — and tell you exactly what to do.</p>
+            <div class="card-metric">
+              <span class="card-metric-value">12</span>
+              <span class="card-metric-label">Health domains</span>
+            </div>
+          </article>
+
+          <article class="card">
+            <span class="card-step">04</span>
+            <div class="card-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="7" width="20" height="14" rx="2"/>
+                <path d="M16 3v4"/>
+                <path d="M8 3v4"/>
+                <circle cx="12" cy="14" r="2"/>
+              </svg>
+            </div>
+            <h3 class="card-title">Connect your wearables <span class="optional-tag">(optional)</span></h3>
+            <p class="card-text">Link Oura Ring, Whoop, or 600+ other devices for a deeper picture. Your health score updates daily with wearable data, giving you a living view of your biology.</p>
+            <div class="card-metric">
+              <span class="card-metric-value">600+</span>
+              <span class="card-metric-label">Devices supported</span>
+            </div>
+          </article>
+
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tech Stack -->
+  <section id="tech" class="tech">
+    <div class="container">
+      <p class="section-label">Under the hood</p>
+      <h2 class="section-title">Production-grade engineering</h2>
+      <div class="tech-grid">
+        <div class="tech-item">
+          <span class="tech-item-label">Runtime</span>
+          <span class="tech-item-value">Firebase · Node 20 · TypeScript</span>
+        </div>
+        <div class="tech-item">
+          <span class="tech-item-label">Testing</span>
+          <span class="tech-item-value">1,062 tests · Jest · 0 errors</span>
+        </div>
+        <div class="tech-item">
+          <span class="tech-item-label">Wearables</span>
+          <span class="tech-item-value">Oura Ring · Whoop · 600+ devices</span>
+        </div>
+        <div class="tech-item">
+          <span class="tech-item-label">AI Layer</span>
+          <span class="tech-item-value">LLM-powered personalised insights</span>
+        </div>
+        <div class="tech-item">
+          <span class="tech-item-label">CI/CD</span>
+          <span class="tech-item-value">3 GitHub Actions workflows</span>
+        </div>
+        <div class="tech-item">
+          <span class="tech-item-label">Quality</span>
+          <span class="tech-item-value">Strict TypeScript · Zero tolerance</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- About -->
+  <section id="about" class="about">
+    <div class="container">
+      <p class="section-label">About</p>
+      <h2 class="section-title">Built from zero to production</h2>
+      <p class="about-text">Omniwo is a longevity-focused health platform launching in the UK. The entire backend — 82 TypeScript modules, 28 test suites, 1,062 passing tests — was built from scratch by a single technical founder.</p>
+      <div class="about-team">
+        <div class="about-person">
+          <span class="about-role">Technical Founder</span>
+          <span class="about-name">Islam</span>
+        </div>
+        <div class="about-person">
+          <span class="about-role">Co-Founder</span>
+          <span class="about-name">Igor</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container footer-inner">
+      <span class="footer-brand">Omniwo</span>
+      <span class="footer-copy">UK · 2026</span>
+    </div>
+  </footer>
+
+</body>
+</html>

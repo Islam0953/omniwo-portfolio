@@ -1,0 +1,408 @@
+/* ─── Reset & Base ─── */
+
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #1a1a1a;
+  background: #fafafa;
+  line-height: 1.6;
+}
+
+.container {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+
+/* ─── Header ─── */
+
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: rgba(250, 250, 250, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+}
+
+.logo {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a1a1a;
+  text-decoration: none;
+  letter-spacing: -0.02em;
+}
+
+.nav {
+  display: flex;
+  gap: 32px;
+}
+
+.nav a {
+  font-size: 14px;
+  font-weight: 500;
+  color: #666;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.nav a:hover {
+  color: #1a1a1a;
+}
+
+
+/* ─── Hero ─── */
+
+.hero {
+  padding: 160px 0 100px;
+  text-align: center;
+}
+
+.hero-label {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #888;
+  margin-bottom: 20px;
+}
+
+.hero-title {
+  font-size: clamp(36px, 5vw, 64px);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  color: #0a0a0a;
+  margin-bottom: 24px;
+}
+
+.hero-subtitle {
+  max-width: 560px;
+  margin: 0 auto;
+  font-size: 17px;
+  line-height: 1.7;
+  color: #555;
+}
+
+
+/* ─── Section Shared ─── */
+
+.section-label {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #888;
+  margin-bottom: 12px;
+}
+
+.section-title {
+  font-size: clamp(28px, 3.5vw, 42px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #0a0a0a;
+  margin-bottom: 48px;
+}
+
+
+/* ─── Feature Cards ─── */
+
+.features {
+  padding: 80px 0 100px;
+}
+
+.cards-viewport {
+  overflow: visible;
+}
+
+.cards-track {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 16px;
+  padding: 32px 28px;
+  display: flex;
+  flex-direction: column;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  cursor: default;
+}
+
+.card:hover {
+  border-color: rgba(0, 0, 0, 0.25);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12);
+}
+
+.card-step {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #bbb;
+  margin-bottom: 16px;
+}
+
+.optional-tag {
+  font-size: 12px;
+  font-weight: 500;
+  color: #999;
+  letter-spacing: 0;
+}
+
+.card-icon {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f5f5f5;
+  border-radius: 12px;
+  color: #333;
+  margin-bottom: 24px;
+}
+
+.card-title {
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: #0a0a0a;
+  margin-bottom: 12px;
+}
+
+.card-text {
+  font-size: 14px;
+  line-height: 1.65;
+  color: #666;
+  flex: 1;
+  margin-bottom: 24px;
+}
+
+.card-metric {
+  padding-top: 20px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.card-metric-value {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #0a0a0a;
+}
+
+.card-metric-label {
+  font-size: 13px;
+  color: #888;
+  font-weight: 500;
+}
+
+
+/* ─── Tech Stack ─── */
+
+.tech {
+  padding: 80px 0 100px;
+  background: #fff;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.tech-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.tech-item {
+  background: #fff;
+  padding: 28px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tech-item-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #999;
+}
+
+.tech-item-value {
+  font-size: 15px;
+  font-weight: 500;
+  color: #1a1a1a;
+}
+
+
+/* ─── About ─── */
+
+.about {
+  padding: 80px 0 100px;
+}
+
+.about-text {
+  max-width: 600px;
+  font-size: 17px;
+  line-height: 1.7;
+  color: #555;
+  margin-bottom: 40px;
+}
+
+.about-team {
+  display: flex;
+  gap: 48px;
+}
+
+.about-person {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.about-role {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #999;
+}
+
+.about-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+
+/* ─── Footer ─── */
+
+.footer {
+  padding: 32px 0;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.footer-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.footer-brand {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.footer-copy {
+  font-size: 13px;
+  color: #999;
+}
+
+
+/* ─── Responsive: Tablet & Below — Horizontal Scroll Slider ─── */
+
+@media (max-width: 960px) {
+  .cards-viewport {
+    overflow: hidden;
+    margin: 0 -24px;
+    padding: 0 24px;
+  }
+
+  .cards-track {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+  }
+
+  .cards-track::-webkit-scrollbar {
+    display: none;
+  }
+
+  .cards-track .card {
+    flex: 0 0 calc(50% - 8px);
+    min-width: calc(50% - 8px);
+    scroll-snap-align: start;
+  }
+}
+
+@media (max-width: 600px) {
+  .hero {
+    padding: 120px 0 64px;
+  }
+
+  .hero-title br {
+    display: none;
+  }
+
+  .hero-subtitle {
+    font-size: 15px;
+  }
+
+  .features,
+  .tech,
+  .about {
+    padding: 56px 0 72px;
+  }
+
+  .section-title {
+    margin-bottom: 32px;
+  }
+
+  .cards-track .card {
+    flex: 0 0 85%;
+    min-width: 85%;
+  }
+
+  .tech-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .about-team {
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .nav {
+    gap: 20px;
+  }
+
+  .nav a {
+    font-size: 13px;
+  }
+}
