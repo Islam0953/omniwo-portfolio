@@ -1,53 +1,199 @@
 <style>
-  .hiw-section { padding: 20px 0 20px; font-family: inherit; -webkit-font-smoothing: antialiased; }
-  .hiw-section, .hiw-section * { font-family: var(--font-primary, inherit) !important; }
-  .hiw-container { max-width: var(--container-width); margin: 0 auto; padding: 0 24px; }
-  .hiw-title { text-align: center; font-family: var(--font-primary) !important; font-size: 48px; font-weight: 500; letter-spacing: -1.92px; line-height: 0.9; color: var(--color-black); margin-bottom: 40px; }
-  .hiw-title-accent { color: var(--color-gold, #C4A265); }
-  .hiw-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-  .hiw-card { position: relative; border-radius: 20px; overflow: hidden; aspect-ratio: 3 / 4.2; background-size: cover; background-position: center; display: flex; flex-direction: column; justify-content: space-between; padding: 24px 22px; cursor: default; transition: box-shadow 0.3s ease; }
-  .hiw-card::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 40%, rgba(0,0,0,0.35) 70%, rgba(0,0,0,0.6) 100%); border-radius: 20px; pointer-events: none; }
-  .hiw-card:hover { box-shadow: 0 0 0 1px rgba(0,0,0,0.08), 0 12px 32px rgba(0,0,0,0.1); }
-  .hiw-step { position: relative; z-index: 1; font-family: var(--font-primary) !important; font-size: clamp(22px, 2.2vw, 34px); font-weight: 500; color: rgba(255,255,255,0.85); font-style: normal; }
-  .hiw-content { position: relative; z-index: 1; }
-  .hiw-card-title { font-family: var(--font-primary) !important; font-size: clamp(22px, 2.2vw, 34px); font-weight: 500; line-height: 1.08; letter-spacing: -0.01em; color: #fff; margin-bottom: 10px; text-shadow: 0 1px 3px rgba(0,0,0,0.15); }
-  .hiw-card-text { font-family: var(--font-primary) !important; font-size: 12.5px; font-weight: 400; line-height: 1.45; color: rgba(255,255,255,0.88); text-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-  @media (max-width: 991px) { .hiw-title { font-size: 36px; letter-spacing: -1.44px; margin-bottom: 32px; } .hiw-cards { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; scrollbar-width: none; } .hiw-cards::-webkit-scrollbar { display: none; } .hiw-card { flex: 0 0 calc(50% - 5px); min-width: calc(50% - 5px); scroll-snap-align: start; } }
-  @media (max-width: 767px) { .hiw-section { padding: 16px 0 16px; } .hiw-title { font-size: 30px; letter-spacing: -1.2px; margin-bottom: 24px; } .hiw-card { flex: 0 0 80%; min-width: 80%; } .hiw-card-title { font-size: 24px; } .hiw-card-text { font-size: 13px; } .hiw-step { font-size: 24px; } }
+/* ===== HOW IT WORKS ===== */
+.ow-how {
+  max-width: var(--container-width);
+  margin: 0 auto;
+  padding: 40px 114px 100px;
+}
+
+.ow-how__heading {
+  text-align: center;
+  margin-bottom: 40px;
+  font-family: var(--font-primary);
+  font-size: 48px;
+  font-weight: 500;
+  letter-spacing: -1.92px;
+  line-height: 0.9;
+  color: var(--color-black);
+}
+
+.ow-how__heading span {
+  color: var(--color-gold);
+}
+
+.ow-how__cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.ow-how__card {
+  position: relative;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  aspect-ratio: 3 / 4.2;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 24px 22px;
+  cursor: default;
+  transition: box-shadow 0.3s ease;
+}
+
+.ow-how__card-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ow-how__card-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 40%, rgba(0,0,0,0.35) 70%, rgba(0,0,0,0.6) 100%);
+  pointer-events: none;
+}
+
+.ow-how__card:hover {
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.08), 0 12px 32px rgba(0,0,0,0.1);
+}
+
+.ow-how__step {
+  position: relative;
+  z-index: 2;
+  font-family: var(--font-primary);
+  font-size: clamp(22px, 2.2vw, 34px);
+  font-weight: 500;
+  color: rgba(255,255,255,0.85);
+}
+
+.ow-how__content {
+  position: relative;
+  z-index: 2;
+}
+
+.ow-how__title {
+  font-family: var(--font-primary);
+  font-size: clamp(22px, 2.2vw, 34px);
+  font-weight: 500;
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+  color: #fff;
+  margin: 0 0 10px 0;
+}
+
+.ow-how__text {
+  font-family: var(--font-primary);
+  font-size: 12.5px;
+  font-weight: 400;
+  line-height: 1.45;
+  color: rgba(255,255,255,0.88);
+  margin: 0;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 991px) {
+  .ow-how {
+    padding: 40px 48px 72px;
+  }
+  .ow-how__heading {
+    font-size: 36px;
+    letter-spacing: -1.44px;
+    margin-bottom: 32px;
+  }
+  .ow-how__cards {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .ow-how__cards::-webkit-scrollbar {
+    display: none;
+  }
+  .ow-how__card {
+    flex: 0 0 calc(50% - 5px);
+    min-width: calc(50% - 5px);
+    scroll-snap-align: start;
+  }
+}
+
+@media (max-width: 767px) {
+  .ow-how {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    margin-left: calc(-50vw + 50%) !important;
+    margin-right: 0 !important;
+    box-sizing: border-box;
+    padding: 40px 12px 30px;
+  }
+  .ow-how__heading {
+    font-size: 30px;
+    letter-spacing: -1.2px;
+    margin-bottom: 24px;
+  }
+  .ow-how__card {
+    flex: 0 0 80%;
+    min-width: 80%;
+  }
+  .ow-how__title {
+    font-size: 24px;
+  }
+  .ow-how__text {
+    font-size: 13px;
+  }
+  .ow-how__step {
+    font-size: 24px;
+  }
+}
 </style>
 
-<div class="hiw-section">
-  <div class="hiw-container">
-    <h2 class="hiw-title">How <span class="hiw-title-accent">Omniwo</span> Works</h2>
-    <div class="hiw-cards">
-      <div class="hiw-card" style="background-image: url('https://res.cloudinary.com/dlj97ydij/image/upload/v1774885028/full-frame-shot-water-drops-orange_xtxtue.jpg')">
-        <span class="hiw-step">step #1</span>
-        <div class="hiw-content">
-          <div class="hiw-card-title">Order<br>Your Test</div>
-          <div class="hiw-card-text">Pick from 7 health categories and up to 90 biomarkers — from a quick longevity check to a full-body deep dive.</div>
-        </div>
-      </div>
-      <div class="hiw-card" style="background-image: url('https://res.cloudinary.com/dlj97ydij/image/upload/v1774885260/detail-yellow-feather-with-water-drops_nplfok.jpg')">
-        <span class="hiw-step">step #2</span>
-        <div class="hiw-content">
-          <div class="hiw-card-title">Collect<br>Your Sample</div>
-          <div class="hiw-card-text">A simple finger-prick kit delivered to your door. 10 minutes, no clinic, free return envelope.</div>
-        </div>
-      </div>
-      <div class="hiw-card" style="background-image: url('https://res.cloudinary.com/dlj97ydij/image/upload/v1774885035/slice-orange-covered-with-bubbles-lies-glass-sparkling-water-close-up_zgwihj.jpg')">
-        <span class="hiw-step">step #3</span>
-        <div class="hiw-content">
-          <div class="hiw-card-title">Get Results<br>& Insights</div>
-          <div class="hiw-card-text">Your Omniwo Score, BioAge, and science-backed insights - showing what standard labs miss. Connect your wearables for a deeper picture.</div>
-        </div>
-      </div>
-      <div class="hiw-card" style="background-image: url('https://res.cloudinary.com/dlj97ydij/image/upload/v1774885032/ovum-with-needle-artificial-insemination-vitro-fertilization-concept-genetic-engineering-artificial-insemination-infertility-treatment_dxnqih.jpg')">
-        <span class="hiw-step">step #4</span>
-        <div class="hiw-content">
-          <div class="hiw-card-title">Follow Your<br>Personalised<br>Protocols</div>
-          <div class="hiw-card-text">Evidence-based action plans built around your unique biomarker profile - designed to optimise your health, slow biological ageing, and track real progress over time.</div>
-        </div>
+<section class="ow-section ow-how">
+  <h2 class="ow-how__heading">How <span>Omniwo</span> Works</h2>
+
+  <div class="ow-how__cards">
+
+    <div class="ow-how__card">
+      <img src="https://res.cloudinary.com/dlj97ydij/image/upload/v1774885028/full-frame-shot-water-drops-orange_xtxtue.jpg" alt="" class="ow-how__card-img">
+      <div class="ow-how__card-overlay"></div>
+      <span class="ow-how__step">step #1</span>
+      <div class="ow-how__content">
+        <p class="ow-how__title">Order<br>Your Test</p>
+        <p class="ow-how__text">Pick from 7 health categories and up to 90 biomarkers — from a quick longevity check to a full-body deep dive.</p>
       </div>
     </div>
+
+    <div class="ow-how__card">
+      <img src="https://res.cloudinary.com/dlj97ydij/image/upload/v1774885260/detail-yellow-feather-with-water-drops_nplfok.jpg" alt="" class="ow-how__card-img">
+      <div class="ow-how__card-overlay"></div>
+      <span class="ow-how__step">step #2</span>
+      <div class="ow-how__content">
+        <p class="ow-how__title">Collect<br>Your Sample</p>
+        <p class="ow-how__text">A simple finger-prick kit delivered to your door. 10 minutes, no clinic, free return envelope.</p>
+      </div>
+    </div>
+
+    <div class="ow-how__card">
+      <img src="https://res.cloudinary.com/dlj97ydij/image/upload/v1774885035/slice-orange-covered-with-bubbles-lies-glass-sparkling-water-close-up_zgwihj.jpg" alt="" class="ow-how__card-img">
+      <div class="ow-how__card-overlay"></div>
+      <span class="ow-how__step">step #3</span>
+      <div class="ow-how__content">
+        <p class="ow-how__title">Get Results<br>& Insights</p>
+        <p class="ow-how__text">Your Omniwo Score, BioAge, and science-backed insights — showing what standard labs miss. Connect your wearables for a deeper picture.</p>
+      </div>
+    </div>
+
+    <div class="ow-how__card">
+      <img src="https://res.cloudinary.com/dlj97ydij/image/upload/v1774885032/ovum-with-needle-artificial-insemination-vitro-fertilization-concept-genetic-engineering-artificial-insemination-infertility-treatment_dxnqih.jpg" alt="" class="ow-how__card-img">
+      <div class="ow-how__card-overlay"></div>
+      <span class="ow-how__step">step #4</span>
+      <div class="ow-how__content">
+        <p class="ow-how__title">Follow Your<br>Personalised<br>Protocols</p>
+        <p class="ow-how__text">Evidence-based action plans built around your unique biomarker profile — designed to optimise your health, slow biological ageing, and track real progress over time.</p>
+      </div>
+    </div>
+
   </div>
-</div>
+</section>
