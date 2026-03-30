@@ -127,10 +127,23 @@ body {
 }
 
 
-/* ─── Feature Cards ─── */
+/* ─── How It Works ─── */
 
-.features {
+.how-it-works {
   padding: 80px 0 100px;
+}
+
+.how-title {
+  text-align: center;
+  font-size: clamp(32px, 4vw, 52px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #0a0a0a;
+  margin-bottom: 48px;
+}
+
+.how-title-accent {
+  color: #c8963e;
 }
 
 .cards-viewport {
@@ -144,83 +157,66 @@ body {
 }
 
 .card {
-  background: #fff;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 16px;
-  padding: 32px 28px;
+  position: relative;
+  border-radius: 20px;
+  overflow: hidden;
+  aspect-ratio: 3 / 4;
+  background-size: cover;
+  background-position: center;
   display: flex;
   flex-direction: column;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  justify-content: space-between;
+  padding: 28px 24px;
   cursor: default;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.08) 0%,
+    rgba(0, 0, 0, 0.25) 35%,
+    rgba(0, 0, 0, 0.65) 100%
+  );
+  border-radius: 20px;
+  pointer-events: none;
 }
 
 .card:hover {
-  border-color: rgba(0, 0, 0, 0.25);
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12);
+  transform: translateY(-4px);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1), 0 8px 24px rgba(0, 0, 0, 0.12);
 }
 
 .card-step {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  color: #bbb;
-  margin-bottom: 16px;
+  position: relative;
+  z-index: 1;
+  font-size: 14px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.85);
+  font-style: italic;
 }
 
-.optional-tag {
-  font-size: 12px;
-  font-weight: 500;
-  color: #999;
-  letter-spacing: 0;
-}
-
-.card-icon {
-  width: 44px;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #f5f5f5;
-  border-radius: 12px;
-  color: #333;
-  margin-bottom: 24px;
+.card-content {
+  position: relative;
+  z-index: 1;
 }
 
 .card-title {
-  font-size: 17px;
-  font-weight: 650;
+  font-size: clamp(24px, 2.2vw, 32px);
+  font-weight: 700;
+  line-height: 1.15;
   letter-spacing: -0.01em;
-  color: #0a0a0a;
-  margin-bottom: 12px;
+  color: #fff;
+  margin-bottom: 14px;
 }
 
 .card-text {
-  font-size: 14px;
-  line-height: 1.65;
-  color: #666;
-  flex: 1;
-  margin-bottom: 24px;
-}
-
-.card-metric {
-  padding-top: 20px;
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-}
-
-.card-metric-value {
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: #0a0a0a;
-}
-
-.card-metric-label {
   font-size: 13px;
-  color: #888;
-  font-weight: 500;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.88);
 }
 
 
@@ -331,7 +327,7 @@ body {
 }
 
 
-/* ─── Responsive: Tablet & Below — Horizontal Scroll Slider ─── */
+/* ─── Responsive: Tablet — Horizontal Scroll Slider ─── */
 
 @media (max-width: 960px) {
   .cards-viewport {
@@ -358,8 +354,11 @@ body {
     flex: 0 0 calc(50% - 8px);
     min-width: calc(50% - 8px);
     scroll-snap-align: start;
+    aspect-ratio: 3 / 4;
   }
 }
+
+/* ─── Responsive: Mobile ─── */
 
 @media (max-width: 600px) {
   .hero {
@@ -374,19 +373,23 @@ body {
     font-size: 15px;
   }
 
-  .features,
+  .how-it-works,
   .tech,
   .about {
     padding: 56px 0 72px;
   }
 
-  .section-title {
+  .how-title {
     margin-bottom: 32px;
   }
 
   .cards-track .card {
-    flex: 0 0 85%;
-    min-width: 85%;
+    flex: 0 0 80%;
+    min-width: 80%;
+  }
+
+  .card-title {
+    font-size: 22px;
   }
 
   .tech-grid {
